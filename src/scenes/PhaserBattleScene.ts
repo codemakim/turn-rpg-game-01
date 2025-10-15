@@ -302,7 +302,7 @@ export class PhaserBattleScene extends Phaser.Scene {
     // 현재 턴이 진행 중이 아니고, 턴 처리 중이 아닐 때만 다음 턴 확인
     if (!this.currentActor && !this.processingTurn) {
       const nextActor = this.controller.update(deltaTime);
-      
+
       if (nextActor === this.hero) {
         // 플레이어 턴 시작
         this.currentActor = nextActor;

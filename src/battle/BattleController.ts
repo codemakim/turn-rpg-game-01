@@ -247,6 +247,13 @@ export class BattleController {
     }
 
     this.turnQueue.consumeTurn(this.enemy);
+
+    // 적 턴 종료 이벤트
+    this.emit({
+      type: 'turn-end',
+      actor: this.enemy,
+      message: '',
+    });
   }
 
   /**
