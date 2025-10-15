@@ -21,17 +21,22 @@ export class PhaserBattleScene extends Phaser.Scene {
   private enemyText!: Phaser.GameObjects.Text;
   private battleLogText!: Phaser.GameObjects.Text;
 
+  // 캐릭터 그래픽
+  private heroGraphics!: Phaser.GameObjects.Container;
+  private enemyGraphics!: Phaser.GameObjects.Container;
+
   private attackButton!: Phaser.GameObjects.Text;
   private skillButtons: Phaser.GameObjects.Text[] = [];
 
   private battleLog: string[] = [];
   private currentActor: Character | null = null;
-
+  private processingTurn = false; // 턴 처리 중 플래그
+  
   // 캐릭터 위치 (애니메이션용)
   private readonly HERO_X = 150;
-  private readonly HERO_Y = 150;
+  private readonly HERO_Y = 250;
   private readonly ENEMY_X = 630;
-  private readonly ENEMY_Y = 150;
+  private readonly ENEMY_Y = 250;
 
   constructor() {
     super({ key: 'BattleScene' });
@@ -136,13 +141,73 @@ export class PhaserBattleScene extends Phaser.Scene {
       if (event.type === 'turn-end') {
         this.disableButtons();
         this.currentActor = null;
+        
+        // 턴 처리 완료 - 다음 턴 처리 가능하도록 약간의 딜레이
+        this.time.delayedCall(100, () => {
+          this.processingTurn = false;
+        });
       }
     });
+
+    // 캐릭터 그래픽 생성
+    this.createCharacterGraphics();
 
     // UI 생성
     this.createUI();
 
     this.addLog('전투 시작!');
+  }
+
+  /**
+   * 캐릭터 그래픽을 생성합니다
+   */
+  private createCharacterGraphics(): void {
+    // 용사 그리기
+    this.heroGraphics = this.add.container(this.HERO_X, this.HERO_Y);
+
+    const heroBody = this.add.graphics();
+    // 몸통 (파란 원)
+    heroBody.fillStyle(0x4ecdc4, 1);
+    heroBody.fillCircle(0, 0, 40);
+
+    // 검 (노란 사각형)
+    heroBody.fillStyle(0xffd700, 1);
+    heroBody.fillRect(30, -5, 25, 10);
+
+    // 눈 (검은 점)
+    heroBody.fillStyle(0x000000, 1);
+    heroBody.fillCircle(-12, -8, 4);
+    heroBody.fillCircle(12, -8, 4);
+
+    // 테두리
+    heroBody.lineStyle(3, 0xffffff, 1);
+    heroBody.strokeCircle(0, 0, 40);
+
+    this.heroGraphics.add(heroBody);
+
+    // 슬라임 그리기
+    this.enemyGraphics = this.add.container(this.ENEMY_X, this.ENEMY_Y);
+
+    const slimeBody = this.add.graphics();
+    // 몸통 (초록 타원)
+    slimeBody.fillStyle(0x46b946, 0.9);
+    slimeBody.fillEllipse(0, 5, 70, 60);
+
+    // 광택 효과 (연한 초록)
+    slimeBody.fillStyle(0x7dff7d, 0.4);
+    slimeBody.fillEllipse(-10, -5, 30, 20);
+
+    // 눈 (검은 점)
+    slimeBody.fillStyle(0x000000, 1);
+    slimeBody.fillCircle(-15, 0, 6);
+    slimeBody.fillCircle(15, 0, 6);
+
+    // 눈 흰자 (하이라이트)
+    slimeBody.fillStyle(0xffffff, 1);
+    slimeBody.fillCircle(-13, -2, 3);
+    slimeBody.fillCircle(17, -2, 3);
+
+    this.enemyGraphics.add(slimeBody);
   }
 
   /**
@@ -157,7 +222,7 @@ export class PhaserBattleScene extends Phaser.Scene {
     });
 
     // 슬라임 정보
-    this.enemyText = this.add.text(530, 50, '', {
+    this.enemyText = this.add.text(500, 50, '', {
       fontSize: '20px',
       color: '#ff6b6b',
       fontStyle: 'bold',
@@ -228,13 +293,19 @@ export class PhaserBattleScene extends Phaser.Scene {
       return;
     }
 
-    // 현재 턴이 진행 중이 아닐 때만 다음 턴 확인
-    if (!this.currentActor) {
+    // 현재 턴이 진행 중이 아니고, 턴 처리 중이 아닐 때만 다음 턴 확인
+    if (!this.currentActor && !this.processingTurn) {
       const nextActor = this.controller.update(deltaTime);
-
+      
       if (nextActor === this.hero) {
+        // 플레이어 턴 시작
         this.currentActor = nextActor;
+        this.processingTurn = true;
         this.enableButtons();
+      } else if (nextActor === null) {
+        // 적 턴이 자동 실행됨 (controller.update 안에서)
+        // 처리 완료될 때까지 대기
+        this.processingTurn = true;
       }
     }
 
@@ -253,14 +324,18 @@ export class PhaserBattleScene extends Phaser.Scene {
     this.enemyText.setText(`${this.enemy.name}\n공격: ${this.enemy.attack} | 방어: ${this.enemy.defense} | 속도: ${this.enemy.speed}`);
 
     // HP/MP 바 그리기
-    this.drawStatusBar(this.heroHPBar, 50, 100, 200, 20, this.hero.hp, this.hero.maxHp, 0xe94560, 'HP');
-    this.drawStatusBar(this.heroMPBar, 50, 130, 200, 16, this.hero.mp, this.hero.maxMp, 0x3d84a8, 'MP');
-    this.drawStatusBar(this.enemyHPBar, 530, 100, 200, 20, this.enemy.hp, this.enemy.maxHp, 0xe94560, 'HP');
-    this.drawStatusBar(this.enemyMPBar, 530, 130, 200, 16, this.enemy.mp, this.enemy.maxMp, 0x3d84a8, 'MP');
+    this.drawStatusBar(this.heroHPBar, 50, 350, 200, 20, this.hero.hp, this.hero.maxHp, 0xe94560, 'HP');
+    this.drawStatusBar(this.heroMPBar, 50, 380, 200, 16, this.hero.mp, this.hero.maxMp, 0x3d84a8, 'MP');
+    this.drawStatusBar(this.enemyHPBar, 500, 350, 200, 20, this.enemy.hp, this.enemy.maxHp, 0xe94560, 'HP');
+    this.drawStatusBar(this.enemyMPBar, 500, 380, 200, 16, this.enemy.mp, this.enemy.maxMp, 0x3d84a8, 'MP');
 
     // 전투 로그
     const recentLogs = this.battleLog.slice(-8);
     this.battleLogText.setText(recentLogs.join('\n'));
+
+    // 캐릭터 생존 상태 반영
+    this.heroGraphics.setAlpha(this.hero.isAlive() ? 1 : 0.3);
+    this.enemyGraphics.setAlpha(this.enemy.isAlive() ? 1 : 0.3);
   }
 
   /**
@@ -335,6 +410,8 @@ export class PhaserBattleScene extends Phaser.Scene {
    * 공격 버튼 클릭 핸들러
    */
   private handleAttack(): void {
+    if (!this.currentActor) return; // 이중 클릭 방지
+    
     this.controller.executeAttack();
     this.currentActor = null;
   }
@@ -343,6 +420,8 @@ export class PhaserBattleScene extends Phaser.Scene {
    * 스킬 버튼 클릭 핸들러
    */
   private handleSkill(skill: Skill): void {
+    if (!this.currentActor) return; // 이중 클릭 방지
+    
     this.controller.executeSkill(skill);
     this.currentActor = null;
   }
@@ -412,11 +491,12 @@ export class PhaserBattleScene extends Phaser.Scene {
 
   /**
    * 캐릭터 흔들림 애니메이션
-   * @param target 흔들릴 대상
+   * @param target 흔들릴 대상 (텍스트)
    */
   private shakeCharacter(target: Phaser.GameObjects.Text): void {
     const originalX = target.x;
 
+    // 텍스트 흔들림
     this.tweens.add({
       targets: target,
       x: originalX + 10,
@@ -424,7 +504,23 @@ export class PhaserBattleScene extends Phaser.Scene {
       yoyo: true,
       repeat: 3,
       onComplete: () => {
-        target.x = originalX; // 원래 위치로 복귀
+        target.x = originalX;
+      },
+    });
+
+    // 캐릭터 그래픽도 함께 흔들림
+    const isHero = target === this.heroText;
+    const graphics = isHero ? this.heroGraphics : this.enemyGraphics;
+    const originalGraphicsX = graphics.x;
+
+    this.tweens.add({
+      targets: graphics,
+      x: originalGraphicsX + 10,
+      duration: 50,
+      yoyo: true,
+      repeat: 3,
+      onComplete: () => {
+        graphics.x = originalGraphicsX;
       },
     });
   }
