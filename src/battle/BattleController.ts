@@ -92,6 +92,11 @@ export class BattleController {
         return this.hero;
       } else {
         // 적 턴 자동 실행
+        this.emit({
+          type: 'turn-start',
+          actor: this.enemy,
+          message: `${this.enemy.name}의 턴!`,
+        });
         this.executeEnemyTurn();
         return null;
       }

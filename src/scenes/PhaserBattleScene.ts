@@ -31,7 +31,7 @@ export class PhaserBattleScene extends Phaser.Scene {
   private battleLog: string[] = [];
   private currentActor: Character | null = null;
   private processingTurn = false; // 턴 처리 중 플래그
-  
+
   // 캐릭터 위치 (애니메이션용)
   private readonly HERO_X = 150;
   private readonly HERO_Y = 250;
@@ -117,6 +117,12 @@ export class PhaserBattleScene extends Phaser.Scene {
         this.addLog(event.message);
       }
 
+      // 턴 시작 이벤트
+      if (event.type === 'turn-start' && event.actor === this.enemy) {
+        // 적 턴 시작 - 처리 중으로 표시
+        this.processingTurn = true;
+      }
+
       // 데미지 애니메이션
       if (event.type === 'damage' && event.data?.damage) {
         const isHeroTarget = event.target === this.hero;
@@ -141,7 +147,7 @@ export class PhaserBattleScene extends Phaser.Scene {
       if (event.type === 'turn-end') {
         this.disableButtons();
         this.currentActor = null;
-        
+
         // 턴 처리 완료 - 다음 턴 처리 가능하도록 약간의 딜레이
         this.time.delayedCall(100, () => {
           this.processingTurn = false;
@@ -302,11 +308,11 @@ export class PhaserBattleScene extends Phaser.Scene {
         this.currentActor = nextActor;
         this.processingTurn = true;
         this.enableButtons();
-      } else if (nextActor === null) {
-        // 적 턴이 자동 실행됨 (controller.update 안에서)
-        // 처리 완료될 때까지 대기
-        this.processingTurn = true;
       }
+      // nextActor === null인 경우:
+      // 1. 턴 게이지가 아직 안 참 (대기)
+      // 2. 적 턴 (자동 실행되고 turn-end 이벤트에서 processingTurn 해제)
+      // 둘 다 processingTurn을 설정하지 않음
     }
 
     // UI 업데이트
@@ -411,7 +417,7 @@ export class PhaserBattleScene extends Phaser.Scene {
    */
   private handleAttack(): void {
     if (!this.currentActor) return; // 이중 클릭 방지
-    
+
     this.controller.executeAttack();
     this.currentActor = null;
   }
@@ -421,7 +427,7 @@ export class PhaserBattleScene extends Phaser.Scene {
    */
   private handleSkill(skill: Skill): void {
     if (!this.currentActor) return; // 이중 클릭 방지
-    
+
     this.controller.executeSkill(skill);
     this.currentActor = null;
   }
