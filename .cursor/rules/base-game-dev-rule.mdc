@@ -1,0 +1,243 @@
+---
+alwaysApply: true
+---
+# TypeScript 게임 개발 가이드라인
+
+## 프로젝트 목표
+
+- TypeScript로 **턴제 RPG** 게임 개발 (이 워크스페이스)
+- 모바일 및 데스크톱 크로스 플랫폼 지원
+- 재사용 가능한 게임 엔진 아키텍처 구축 (향후 다른 게임에 활용)
+
+## 개발 전략
+
+- **한 번에 하나의 게임만 개발** (현재: 턴제 RPG)
+- 다른 게임은 별도 워크스페이스에서 진행
+- 공통 코드는 향후 별도 라이브러리로 추출 가능
+
+## 코드 작성 원칙
+
+### 1. 아키텍처 패턴
+
+- **ECS (Entity-Component-System)** 패턴 권장: 게임 오브젝트를 데이터와 로직으로 분리
+- **상태 관리**: FSM (Finite State Machine) 또는 상태 패턴 활용
+- **이벤트 시스템**: 느슨한 결합을 위한 이벤트 버스 패턴 사용
+- **싱글톤 최소화**: DI (의존성 주입) 패턴 우선 고려
+
+### 2. TypeScript 활용
+
+- 강력한 타입 정의 사용 (any 타입 지양)
+- 제네릭 적극 활용
+- interface와 type 적절히 사용
+- **모든 public 메서드/함수에 JSDoc 주석 작성**
+- **모든 interface/type에 설명 주석 추가**
+- **복잡한 로직에는 인라인 주석으로 설명**
+
+#### 주석 작성 예시
+
+```typescript
+/**
+ * 캐릭터의 기본 스탯 정보
+ */
+export interface CharacterStats {
+  /** 캐릭터 이름 */
+  name: string;
+  /** 현재 체력 */
+  hp: number;
+  /** 최대 체력 (선택, 기본값: hp) */
+  maxHp?: number;
+}
+
+/**
+ * 게임 캐릭터 클래스
+ * 플레이어와 적 모두 이 클래스를 사용
+ */
+export class Character {
+  /**
+   * 데미지를 받아 HP를 감소시킴
+   * @param amount 받을 데미지량
+   */
+  takeDamage(amount: number): void {
+    // HP는 0 이하로 내려가지 않음
+    this.hp = Math.max(0, this.hp - amount);
+  }
+  
+  /**
+   * HP를 회복함
+   * @param amount 회복량
+   */
+  heal(amount: number): void {
+    // maxHp를 초과할 수 없음
+    this.hp = Math.min(this.maxHp, this.hp + amount);
+  }
+}
+```
+
+### 3. 게임 루프 및 성능
+
+- **requestAnimationFrame** 사용: 부드러운 60 FPS 유지
+- **Delta Time** 계산: 프레임 독립적인 움직임 구현
+- **Object Pooling**: 빈번한 객체 생성/삭제 방지
+- **Dirty Flag 패턴**: 불필요한 재계산 방지
+
+### 4. 파일 구조 (턴제 RPG - Phaser 3 기반)
+
+```text
+src/
+├── main.ts                    # 🎮 Phaser 게임 시작점
+├── core/                      # 게임 엔진 코어
+│   └── Scene.ts              # ✅ 씬 베이스 클래스
+├── characters/                # 캐릭터 관련
+│   └── Character.ts          # ✅ 캐릭터 클래스
+├── battle/                    # 전투 시스템 (로직)
+│   ├── BattleController.ts   # ✅ 전투 로직 컨트롤러
+│   ├── EnemyAI.ts            # ✅ 적 AI 시스템
+│   ├── TurnQueue.ts          # ✅ 턴 순서 관리
+│   ├── DamageCalculator.ts   # ✅ 데미지 계산
+│   └── Skill.ts              # ✅ 스킬 시스템
+├── scenes/                    # Phaser 씬
+│   └── PhaserBattleScene.ts  # ✅ 전투 씬 (Phaser 기반)
+├── utils/                     # 유틸리티
+│   └── SkillLoader.ts        # ✅ 스킬 데이터 로더
+├── demo/                      # 데모/테스트
+│   └── battleDemo.ts         # ✅ 콘솔 전투 데모
+└── 테스트 파일들/
+    ├── Character.test.ts
+    ├── DamageCalculator.test.ts
+    ├── TurnQueue.test.ts
+    ├── Skill.test.ts
+    ├── EnemyAI.test.ts
+    └── BattleSimulation.test.ts
+
+# 향후 추가 예정 (Phase 5+):
+├── systems/
+│   ├── SaveManager.ts        # ⬜ 세이브/로드
+│   ├── InventoryManager.ts   # ⬜ 인벤토리
+│   └── EquipmentManager.ts   # ⬜ 장비 시스템
+├── scenes/
+│   ├── TitleScene.ts         # ⬜ 타이틀 화면 (Phaser)
+│   ├── ShopScene.ts          # ⬜ 상점 (Phaser)
+│   ├── MapScene.ts           # ⬜ 맵/필드 (Phaser)
+│   └── InventoryScene.ts     # ⬜ 인벤토리 화면 (Phaser)
+└── data/
+    ├── items.json            # ⬜ 아이템 데이터
+    ├── equipment.json        # ⬜ 장비 데이터
+    └── enemies.json          # ⬜ 적 데이터
+```
+
+### 5. 턴제 RPG 핵심 시스템
+
+- **턴 큐**: 속도(AGI) 기반 행동 순서, 턴 게이지 시스템
+- **커맨드 패턴**: 행동을 객체로 캡슐화, 실행 취소/재실행 가능
+- **전투 계산기**: 데미지 공식, 크리티컬/회피 확률 계산
+- **스킬 시스템**: MP 소모, 타겟팅(단일/전체/아군), 즉시/지속 효과
+- **AI 시스템**: 규칙 기반 적 행동 패턴
+
+### 6. 기타 시스템
+
+- **렌더링**: Phaser 3 (씬 시스템, 애니메이션, 타일맵 지원)
+- **입력**: Phaser 내장 입력 시스템 (마우스/터치/키보드)
+- **데이터**: JSON 기반 타입 안전 로더
+- **저장**: LocalStorage 또는 IndexedDB
+- **사운드**: Phaser 오디오 시스템
+- **애니메이션**: Phaser Tweens
+
+## 사용 라이브러리
+
+- **Phaser 3**: 게임 엔진 (렌더링, 씬 관리, 입력, 사운드)
+- **필요시 추가**: zustand(상태관리), howler.js(고급 오디오)
+
+## 일반 작업 원칙
+
+### 개발 순서 (턴제 RPG)
+
+1. **Phase 1: 핵심 전투 시스템**
+   - Character 클래스 (HP, MP, 스탯)
+   - 기본 공격 시스템
+   - 턴 큐 (간단한 순서 관리)
+   - 콘솔 기반 테스트
+
+2. **Phase 2: UI 렌더링**
+   - Canvas 기본 설정
+   - 캐릭터 HP/MP 표시
+   - 버튼 UI (공격, 스킬, 아이템)
+   - 터치/클릭 입력
+
+3. **Phase 3: 스킬 시스템**
+   - 스킬 데이터 정의
+   - MP 소모 및 효과
+   - 타겟팅 시스템
+
+4. **Phase 4: 적 AI**
+   - 간단한 행동 패턴
+   - 난이도 조절
+
+5. **Phase 5: 추가 기능**
+   - 애니메이션
+   - 사운드
+   - 세이브/로드
+   - 여러 전투 스테이지
+
+### 작업 방식
+
+- 한 번에 하나의 Phase에 집중
+- 각 Phase 완료 후 플레이 테스트
+- 모바일 터치와 데스크톱 마우스 모두 지원
+- 성능 최적화는 기능 구현 후 진행
+- 코드는 재사용 가능하게 작성 (향후 다른 게임에 활용)
+
+## 개발 워크플로우
+
+### 기능 개발 프로세스 (TDD 방식)
+
+모든 새 기능 개발 시 아래 순서를 따릅니다:
+
+#### 1. 계획 수립 (Plan)
+
+- **AI는 반드시 todo_write 도구를 사용하여 계획을 작성합니다.**
+- 사용자에게 계획 확인 받기
+
+#### 2. 테스트 작성 (Test First)
+
+- **구현 전에 먼저 테스트를 작성합니다.**
+- 실패하는 테스트부터 시작 (Red)
+
+#### 3. 구현 (Implementation)
+
+- 테스트를 통과하는 최소한의 코드만 작성 (Green)
+- 과도한 추상화 지양
+
+#### 4. 테스트 실행 및 확인
+
+- `npm test`로 모든 테스트 통과 확인
+- 실패 시 구현 수정 후 재테스트
+
+#### 5. 체크리스트 업데이트
+
+- **AI는 todo_write로 완료 항목을 체크합니다.**
+- 진행 상황을 실시간 반영
+
+#### 6. 리팩토링 (필요시)
+
+- 중복 코드 제거, 함수 분리, 네이밍 개선, 타입 강화
+
+### 테스트 환경 설정
+
+```bash
+npm install -D vitest @vitest/ui
+```
+
+package.json에 스크립트 추가: `"test": "vitest"`
+
+vitest.config.ts 설정: globals, jsdom, path alias (@)
+
+### 작업 중단 시 인수인계
+
+AI는 작업 중단 시 완료된 작업, 진행 중인 작업, 다음 할 일을 명확히 남깁니다.
+
+## 주의사항
+
+- 브라우저 호환성 체크 (특히 모바일 Safari)
+- 메모리 누수 방지 (이벤트 리스너 정리)
+- 에러 핸들링 (리소스 로딩 실패 등)
+- 접근성 고려 (키보드 내비게이션, 색약 모드)

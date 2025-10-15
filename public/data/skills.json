@@ -1,0 +1,42 @@
+[
+  {
+    "id": "power-attack",
+    "name": "강타",
+    "description": "강력한 일격으로 1.5배 데미지",
+    "mpCost": 10,
+    "targetType": "single-enemy",
+    "effects": [
+      {
+        "type": "damage",
+        "value": 45
+      }
+    ]
+  },
+  {
+    "id": "heal",
+    "name": "힐",
+    "description": "HP 30 회복",
+    "mpCost": 15,
+    "targetType": "self",
+    "effects": [
+      {
+        "type": "heal",
+        "value": 30
+      }
+    ]
+  },
+  {
+    "id": "fireball",
+    "name": "파이어볼",
+    "description": "화염 공격",
+    "mpCost": 20,
+    "targetType": "single-enemy",
+    "effects": [
+      {
+        "type": "damage",
+        "value": 50
+      }
+    ]
+  }
+]
+

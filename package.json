@@ -1,0 +1,27 @@
+{
+  "name": "ts-game-project",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest --coverage",
+    "demo:battle": "tsx src/demo/battleDemo.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^24.7.2",
+    "@vitest/ui": "^3.2.4",
+    "jsdom": "^27.0.0",
+    "tsx": "^4.20.6",
+    "typescript": "~5.9.3",
+    "vite": "^7.1.7",
+    "vitest": "^3.2.4"
+  },
+  "dependencies": {
+    "phaser": "^3.90.0"
+  }
+}
