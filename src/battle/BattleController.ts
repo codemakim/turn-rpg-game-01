@@ -121,6 +121,14 @@ export class BattleController {
       data: { damage: damageResult.damage, isCritical: damageResult.isCritical },
     });
 
+    // 데미지 이벤트 (애니메이션용)
+    this.emit({
+      type: 'damage',
+      target: this.enemy,
+      message: '',
+      data: { damage: damageResult.damage, isCritical: damageResult.isCritical },
+    });
+
     this.turnQueue.consumeTurn(this.hero);
 
     this.emit({
@@ -151,6 +159,10 @@ export class BattleController {
           type: effect.type === 'damage' ? 'damage' : 'heal',
           target,
           message: effect.message,
+          data: {
+            damage: effect.type === 'damage' ? effect.value : undefined,
+            amount: effect.type === 'heal' ? effect.value : undefined,
+          },
         });
       });
 
@@ -194,6 +206,10 @@ export class BattleController {
             type: effect.type === 'damage' ? 'damage' : 'heal',
             target: action.target,
             message: effect.message,
+            data: {
+              damage: effect.type === 'damage' ? effect.value : undefined,
+              amount: effect.type === 'heal' ? effect.value : undefined,
+            },
           });
         });
       }
@@ -213,6 +229,14 @@ export class BattleController {
         actor: this.enemy,
         target: this.hero,
         message: `${this.enemy.name}의 공격! ${damageResult.damage} 데미지!${critText}`,
+        data: { damage: damageResult.damage, isCritical: damageResult.isCritical },
+      });
+
+      // 데미지 이벤트 (애니메이션용)
+      this.emit({
+        type: 'damage',
+        target: this.hero,
+        message: '',
         data: { damage: damageResult.damage, isCritical: damageResult.isCritical },
       });
     }

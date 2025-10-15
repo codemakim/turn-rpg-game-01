@@ -27,6 +27,12 @@ export class PhaserBattleScene extends Phaser.Scene {
   private battleLog: string[] = [];
   private currentActor: Character | null = null;
 
+  // 캐릭터 위치 (애니메이션용)
+  private readonly HERO_X = 150;
+  private readonly HERO_Y = 150;
+  private readonly ENEMY_X = 630;
+  private readonly ENEMY_Y = 150;
+
   constructor() {
     super({ key: 'BattleScene' });
   }
@@ -100,10 +106,31 @@ export class PhaserBattleScene extends Phaser.Scene {
     // 컨트롤러 생성 (로직 재사용!)
     this.controller = new BattleController(this.hero, this.enemy);
 
-    // 이벤트 리스너 (로그 추가)
+    // 이벤트 리스너 (로그 추가 + 애니메이션)
     this.controller.on((event) => {
       if (event.message) {
         this.addLog(event.message);
+      }
+
+      // 데미지 애니메이션
+      if (event.type === 'damage' && event.data?.damage) {
+        const isHeroTarget = event.target === this.hero;
+        const x = isHeroTarget ? this.HERO_X : this.ENEMY_X;
+        const y = isHeroTarget ? this.HERO_Y : this.ENEMY_Y;
+
+        this.showDamageAnimation(x, y, event.data.damage, event.data.isCritical);
+
+        // 흔들림 효과
+        this.shakeCharacter(isHeroTarget ? this.heroText : this.enemyText);
+      }
+
+      // 회복 애니메이션
+      if (event.type === 'heal' && event.data?.amount) {
+        const isHeroTarget = event.target === this.hero;
+        const x = isHeroTarget ? this.HERO_X : this.ENEMY_X;
+        const y = isHeroTarget ? this.HERO_Y : this.ENEMY_Y;
+
+        this.showHealAnimation(x, y, event.data.amount);
       }
 
       if (event.type === 'turn-end') {
@@ -159,6 +186,8 @@ export class PhaserBattleScene extends Phaser.Scene {
     })
       .setInteractive({ useHandCursor: true })
       .on('pointerdown', () => this.handleAttack())
+      .on('pointerover', () => this.onButtonHover(this.attackButton))
+      .on('pointerout', () => this.onButtonOut(this.attackButton))
       .setAlpha(0.5); // 비활성화 상태
 
     // 스킬 버튼들
@@ -177,6 +206,8 @@ export class PhaserBattleScene extends Phaser.Scene {
       )
         .setInteractive({ useHandCursor: true })
         .on('pointerdown', () => this.handleSkill(skill))
+        .on('pointerover', () => this.onButtonHover(btn))
+        .on('pointerout', () => this.onButtonOut(btn))
         .setAlpha(0.5);
 
       this.skillButtons.push(btn);
@@ -321,6 +352,111 @@ export class PhaserBattleScene extends Phaser.Scene {
    */
   private addLog(message: string): void {
     this.battleLog.push(message);
+  }
+
+  /**
+   * 데미지 숫자 애니메이션을 표시합니다
+   * @param x X 좌표
+   * @param y Y 좌표
+   * @param damage 데미지량
+   * @param isCritical 크리티컬 여부
+   */
+  private showDamageAnimation(x: number, y: number, damage: number, isCritical?: boolean): void {
+    const color = isCritical ? '#ff4444' : '#ffffff';
+    const fontSize = isCritical ? '32px' : '24px';
+
+    const damageText = this.add.text(x, y, `-${damage}`, {
+      fontSize,
+      color,
+      fontStyle: 'bold',
+      stroke: '#000000',
+      strokeThickness: 4,
+    }).setOrigin(0.5);
+
+    // 튀어오르며 사라지는 애니메이션
+    this.tweens.add({
+      targets: damageText,
+      y: y - 80,
+      alpha: 0,
+      duration: 1000,
+      ease: 'Power2',
+      onComplete: () => damageText.destroy(),
+    });
+  }
+
+  /**
+   * 회복 숫자 애니메이션을 표시합니다
+   * @param x X 좌표
+   * @param y Y 좌표
+   * @param amount 회복량
+   */
+  private showHealAnimation(x: number, y: number, amount: number): void {
+    const healText = this.add.text(x, y, `+${amount}`, {
+      fontSize: '24px',
+      color: '#44ff44',
+      fontStyle: 'bold',
+      stroke: '#000000',
+      strokeThickness: 4,
+    }).setOrigin(0.5);
+
+    // 튀어오르며 사라지는 애니메이션
+    this.tweens.add({
+      targets: healText,
+      y: y - 80,
+      alpha: 0,
+      duration: 1000,
+      ease: 'Power2',
+      onComplete: () => healText.destroy(),
+    });
+  }
+
+  /**
+   * 캐릭터 흔들림 애니메이션
+   * @param target 흔들릴 대상
+   */
+  private shakeCharacter(target: Phaser.GameObjects.Text): void {
+    const originalX = target.x;
+
+    this.tweens.add({
+      targets: target,
+      x: originalX + 10,
+      duration: 50,
+      yoyo: true,
+      repeat: 3,
+      onComplete: () => {
+        target.x = originalX; // 원래 위치로 복귀
+      },
+    });
+  }
+
+  /**
+   * 버튼 호버 시 애니메이션
+   * @param button 버튼 객체
+   */
+  private onButtonHover(button: Phaser.GameObjects.Text): void {
+    if (button.alpha === 1) { // 활성화된 버튼만
+      this.tweens.add({
+        targets: button,
+        scaleX: 1.05,
+        scaleY: 1.05,
+        duration: 100,
+        ease: 'Power1',
+      });
+    }
+  }
+
+  /**
+   * 버튼에서 마우스가 나갈 때 애니메이션
+   * @param button 버튼 객체
+   */
+  private onButtonOut(button: Phaser.GameObjects.Text): void {
+    this.tweens.add({
+      targets: button,
+      scaleX: 1,
+      scaleY: 1,
+      duration: 100,
+      ease: 'Power1',
+    });
   }
 
   /**
