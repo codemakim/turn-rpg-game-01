@@ -149,7 +149,7 @@ export class PhaserBattleScene extends Phaser.Scene {
         this.currentActor = null;
 
         // 턴 처리 완료 - 다음 턴 처리 가능하도록 약간의 딜레이
-        this.time.delayedCall(100, () => {
+        this.time.delayedCall(300, () => {
           this.processingTurn = false;
         });
       }

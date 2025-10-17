@@ -31,12 +31,50 @@ export class TurnQueue {
 
   /**
    * 모든 캐릭터의 턴 게이지를 업데이트합니다
+   * 다음 업데이트까지 아무도 100 도달 못할 때는 즉시 점프합니다
    * @param deltaTime 이전 프레임과의 시간 차이 (초 단위)
    */
   updateGauges(deltaTime: number): void {
-    this.entries.forEach(entry => {
-      entry.turnGauge += entry.character.speed * deltaTime;
-    });
+    // 점프 조건 확인: 다음 업데이트까지 아무도 100 도달 못할 때
+    let needsJump = true;
+    let jumpTime = 0;
+
+    // 다음 업데이트에서 누가 100 도달할지 확인
+    for (const entry of this.entries) {
+      if (entry.character.isAlive()) {
+        const nextGauge = entry.turnGauge + entry.character.speed * deltaTime;
+        if (nextGauge >= 100) {
+          needsJump = false;
+          break;
+        }
+      }
+    }
+
+    if (needsJump) {
+      // 가장 빨리 100 도달할 캐릭터까지의 시간 계산
+      let minTimeTo100 = Infinity;
+      for (const entry of this.entries) {
+        if (entry.character.isAlive() && entry.turnGauge < 100) {
+          const timeTo100 = (100 - entry.turnGauge) / entry.character.speed;
+          minTimeTo100 = Math.min(minTimeTo100, timeTo100);
+        }
+      }
+
+      if (minTimeTo100 !== Infinity) {
+        jumpTime = minTimeTo100;
+        // 모든 캐릭터를 점프 시점으로 업데이트
+        this.entries.forEach(entry => {
+          if (entry.character.isAlive()) {
+            entry.turnGauge += entry.character.speed * jumpTime;
+          }
+        });
+      }
+    } else {
+      // 일반 업데이트
+      this.entries.forEach(entry => {
+        entry.turnGauge += entry.character.speed * deltaTime;
+      });
+    }
   }
 
   /**
@@ -54,6 +92,7 @@ export class TurnQueue {
 
   /**
    * 캐릭터가 행동을 완료했을 때 턴을 소비합니다
+   * 행동한 캐릭터의 게이지만 100 차감 (다른 캐릭터는 유지)
    * @param character 행동한 캐릭터
    */
   consumeTurn(character: Character): void {

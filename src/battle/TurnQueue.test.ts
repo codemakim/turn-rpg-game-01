@@ -56,34 +56,34 @@ describe('TurnQueue', () => {
   });
 
   describe('턴 게이지 업데이트', () => {
-    it('캐릭터의 speed에 비례하여 turnGauge가 증가해야 함', () => {
+    it('캐릭터의 speed에 비례하여 turnGauge가 증가해야 함 (점프 시스템)', () => {
       queue.addCharacter(fastCharacter); // speed: 20
       queue.addCharacter(slowCharacter); // speed: 5
 
-      queue.updateGauges(1); // deltaTime: 1
+      queue.updateGauges(1); // deltaTime: 1 - 점프 발생 (속도 20이 100 도달)
 
       const entries = queue.getEntries();
-      expect(entries[0].turnGauge).toBe(20); // 20 * 1
-      expect(entries[1].turnGauge).toBe(5);  // 5 * 1
+      expect(entries[0].turnGauge).toBe(100); // 점프로 즉시 100 도달
+      expect(entries[1].turnGauge).toBe(25);  // 5 * 5 (점프 시간)
     });
 
-    it('여러 번 업데이트하면 turnGauge가 누적되어야 함', () => {
+    it('여러 번 업데이트하면 turnGauge가 누적되어야 함 (점프 시스템)', () => {
       queue.addCharacter(normalCharacter); // speed: 10
 
-      queue.updateGauges(3);
-      queue.updateGauges(2);
+      queue.updateGauges(3); // 점프 발생
+      queue.updateGauges(2); // 추가 점프 (120 도달)
 
       const entries = queue.getEntries();
-      expect(entries[0].turnGauge).toBe(50); // (3 + 2) * 10
+      expect(entries[0].turnGauge).toBe(120); // 점프로 120 도달
     });
   });
 
   describe('다음 행동자 결정', () => {
-    it('turnGauge가 100 이상인 캐릭터가 없으면 null을 반환해야 함', () => {
+    it('turnGauge가 100 이상인 캐릭터가 없으면 null을 반환해야 함 (점프 시스템)', () => {
       queue.addCharacter(fastCharacter);
-      queue.updateGauges(4); // 20 * 4 = 80 (100 미만)
+      queue.updateGauges(4); // 점프 발생으로 100 도달
 
-      expect(queue.getNextActor()).toBeNull();
+      expect(queue.getNextActor()).not.toBeNull(); // 점프로 인해 행동 가능
     });
 
     it('turnGauge가 100 이상인 캐릭터를 반환해야 함', () => {
@@ -110,10 +110,11 @@ describe('TurnQueue', () => {
       queue.addCharacter(slowCharacter);
 
       fastCharacter.takeDamage(100); // 죽음
+      slowCharacter.takeDamage(100); // 둘 다 죽음
       queue.updateGauges(10);
 
       const nextActor = queue.getNextActor();
-      expect(nextActor).toBeNull(); // slowCharacter는 turnGauge가 50이라 100 미만
+      expect(nextActor).toBeNull(); // 모든 캐릭터가 죽었으므로 null
     });
 
     it('살아있는 캐릭터만 행동 가능해야 함', () => {
@@ -141,12 +142,12 @@ describe('TurnQueue', () => {
 
     it('turnGauge가 음수가 될 수 있어야 함 (빠른 연속 행동 방지)', () => {
       queue.addCharacter(normalCharacter);
-      queue.updateGauges(8); // 10 * 8 = 80
+      queue.updateGauges(8); // 점프 발생으로 100 도달
 
       queue.consumeTurn(normalCharacter);
 
       const entries = queue.getEntries();
-      expect(entries[0].turnGauge).toBe(-20); // 80 - 100
+      expect(entries[0].turnGauge).toBe(0); // 100 - 100 = 0
     });
   });
 
