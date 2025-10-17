@@ -31,22 +31,25 @@ export interface BattleEvent {
  */
 export class BattleController {
   private turnQueue: TurnQueue;
-  private hero: Character;
-  private enemy: Character;
+  private heroes: Character[];
+  private enemies: Character[];
   private eventCallbacks: ((event: BattleEvent) => void)[] = [];
 
   /**
    * BattleController를 생성합니다
-   * @param hero 플레이어 캐릭터
-   * @param enemy 적 캐릭터
+   * @param heroes 플레이어 캐릭터 배열
+   * @param enemies 적 캐릭터 배열
    */
-  constructor(hero: Character, enemy: Character) {
-    this.hero = hero;
-    this.enemy = enemy;
+  constructor(heroes: Character[], enemies: Character[]) {
+    this.heroes = heroes;
+    this.enemies = enemies;
 
     this.turnQueue = new TurnQueue();
-    this.turnQueue.addCharacter(hero);
-    this.turnQueue.addCharacter(enemy);
+
+    // 모든 캐릭터를 턴 큐에 추가
+    [...this.heroes, ...this.enemies].forEach(character => {
+      this.turnQueue.addCharacter(character);
+    });
   }
 
   /**
@@ -71,8 +74,8 @@ export class BattleController {
    * @returns 다음 행동자 (플레이어 턴이면 hero, 적 턴이면 자동 실행 후 null)
    */
   update(deltaTime: number): Character | null {
-    // 전투 종료 확인
-    if (!this.hero.isAlive() || !this.enemy.isAlive()) {
+    // 전투 종료 확인 (팀 승리 조건)
+    if (this.isBattleOver()) {
       return null;
     }
 
@@ -82,22 +85,22 @@ export class BattleController {
     // 다음 행동자 확인
     const nextActor = this.turnQueue.getNextActor();
     if (nextActor) {
-      if (nextActor === this.hero) {
+      if (this.heroes.includes(nextActor)) {
         // 플레이어 턴 시작
         this.emit({
           type: 'turn-start',
-          actor: this.hero,
-          message: `${this.hero.name}의 턴!`,
+          actor: nextActor,
+          message: `${nextActor.name}의 턴!`,
         });
-        return this.hero;
+        return nextActor;
       } else {
         // 적 턴 자동 실행
         this.emit({
           type: 'turn-start',
-          actor: this.enemy,
-          message: `${this.enemy.name}의 턴!`,
+          actor: nextActor,
+          message: `${nextActor.name}의 턴!`,
         });
-        this.executeEnemyTurn();
+        this.executeEnemyTurn(nextActor);
         return null;
       }
     }
@@ -107,38 +110,40 @@ export class BattleController {
 
   /**
    * 플레이어의 기본 공격을 실행합니다
+   * @param attacker 공격하는 캐릭터
+   * @param target 공격 대상 캐릭터
    */
-  executeAttack(): void {
+  executeAttack(attacker: Character, target: Character): void {
     const damageResult = calculateDamage({
-      attack: this.hero.attack,
-      defense: this.enemy.defense,
+      attack: attacker.attack,
+      defense: target.defense,
       criticalRate: 0.2,
     });
 
-    this.enemy.takeDamage(damageResult.damage);
+    target.takeDamage(damageResult.damage);
 
     const critText = damageResult.isCritical ? ' [크리티컬!]' : '';
     this.emit({
       type: 'attack',
-      actor: this.hero,
-      target: this.enemy,
-      message: `${this.hero.name}의 공격! ${damageResult.damage} 데미지!${critText}`,
+      actor: attacker,
+      target: target,
+      message: `${attacker.name}의 공격! ${damageResult.damage} 데미지!${critText}`,
       data: { damage: damageResult.damage, isCritical: damageResult.isCritical },
     });
 
     // 데미지 이벤트 (애니메이션용)
     this.emit({
       type: 'damage',
-      target: this.enemy,
+      target: target,
       message: '',
       data: { damage: damageResult.damage, isCritical: damageResult.isCritical },
     });
 
-    this.turnQueue.consumeTurn(this.hero);
+    this.turnQueue.consumeTurn(attacker);
 
     this.emit({
       type: 'turn-end',
-      actor: this.hero,
+      actor: attacker,
       message: '',
     });
   }
@@ -146,36 +151,40 @@ export class BattleController {
   /**
    * 플레이어의 스킬을 사용합니다
    * @param skill 사용할 스킬
+   * @param caster 스킬을 사용하는 캐릭터
+   * @param targets 스킬 대상 캐릭터 배열
    */
-  executeSkill(skill: Skill): void {
-    const target = skill.targetType === 'self' ? this.hero : this.enemy;
-    const result = skill.use(this.hero, [target]);
+  executeSkill(skill: Skill, caster: Character, targets: Character[]): void {
+    const result = skill.use(caster, targets);
 
     if (result.success) {
       this.emit({
         type: 'skill',
-        actor: this.hero,
-        target,
+        actor: caster,
         message: result.message,
       });
 
       result.effects.forEach(effect => {
-        this.emit({
-          type: effect.type === 'damage' ? 'damage' : 'heal',
-          target,
-          message: effect.message,
-          data: {
-            damage: effect.type === 'damage' ? effect.value : undefined,
-            amount: effect.type === 'heal' ? effect.value : undefined,
-          },
-        });
+        // 대상 캐릭터 찾기 (이름으로 매칭)
+        const targetChar = [...this.heroes, ...this.enemies].find(c => c.name === effect.target);
+        if (targetChar) {
+          this.emit({
+            type: effect.type === 'damage' ? 'damage' : 'heal',
+            target: targetChar,
+            message: effect.message,
+            data: {
+              damage: effect.type === 'damage' ? effect.value : undefined,
+              amount: effect.type === 'heal' ? effect.value : undefined,
+            },
+          });
+        }
       });
 
-      this.turnQueue.consumeTurn(this.hero);
+      this.turnQueue.consumeTurn(caster);
 
       this.emit({
         type: 'turn-end',
-        actor: this.hero,
+        actor: caster,
         message: '',
       });
     } else {
@@ -189,79 +198,29 @@ export class BattleController {
   /**
    * 적의 턴을 자동으로 실행합니다
    * AI가 상황에 맞는 행동을 결정합니다
+   * @param enemy 행동하는 적 캐릭터
    */
-  private executeEnemyTurn(): void {
+  private executeEnemyTurn(enemy: Character): void {
     const ai = new EnemyAI();
-    const action = ai.decideAction(this.enemy, [this.hero]);
+    const action = ai.decideAction(enemy, this.heroes);
 
     if (action.type === 'skill' && action.skill) {
       // AI가 스킬 사용을 선택함
-      const result = action.skill.use(this.enemy, [action.target]);
-
-      if (result.success) {
-        this.emit({
-          type: 'skill',
-          actor: this.enemy,
-          target: action.target,
-          message: result.message,
-        });
-
-        result.effects.forEach(effect => {
-          this.emit({
-            type: effect.type === 'damage' ? 'damage' : 'heal',
-            target: action.target,
-            message: effect.message,
-            data: {
-              damage: effect.type === 'damage' ? effect.value : undefined,
-              amount: effect.type === 'heal' ? effect.value : undefined,
-            },
-          });
-        });
-      }
+      this.executeSkill(action.skill, enemy, [action.target]);
     } else {
       // 기본 공격
-      const damageResult = calculateDamage({
-        attack: this.enemy.attack,
-        defense: this.hero.defense,
-        criticalRate: 0.15,
-      });
-
-      this.hero.takeDamage(damageResult.damage);
-
-      const critText = damageResult.isCritical ? ' [크리티컬!]' : '';
-      this.emit({
-        type: 'attack',
-        actor: this.enemy,
-        target: this.hero,
-        message: `${this.enemy.name}의 공격! ${damageResult.damage} 데미지!${critText}`,
-        data: { damage: damageResult.damage, isCritical: damageResult.isCritical },
-      });
-
-      // 데미지 이벤트 (애니메이션용)
-      this.emit({
-        type: 'damage',
-        target: this.hero,
-        message: '',
-        data: { damage: damageResult.damage, isCritical: damageResult.isCritical },
-      });
+      this.executeAttack(enemy, action.target);
     }
-
-    this.turnQueue.consumeTurn(this.enemy);
-
-    // 적 턴 종료 이벤트
-    this.emit({
-      type: 'turn-end',
-      actor: this.enemy,
-      message: '',
-    });
   }
 
   /**
-   * 전투가 종료되었는지 확인합니다
+   * 전투가 종료되었는지 확인합니다 (팀 승리 조건)
    * @returns 전투 종료 여부
    */
   isBattleOver(): boolean {
-    return !this.hero.isAlive() || !this.enemy.isAlive();
+    const heroesAlive = this.heroes.some(hero => hero.isAlive());
+    const enemiesAlive = this.enemies.some(enemy => enemy.isAlive());
+    return !heroesAlive || !enemiesAlive;
   }
 
   /**
@@ -269,7 +228,9 @@ export class BattleController {
    * @returns 플레이어가 승리하면 true
    */
   isVictory(): boolean {
-    return this.hero.isAlive() && !this.enemy.isAlive();
+    const heroesAlive = this.heroes.some(hero => hero.isAlive());
+    const enemiesAlive = this.enemies.some(enemy => enemy.isAlive());
+    return heroesAlive && !enemiesAlive;
   }
 
   /**
@@ -277,23 +238,24 @@ export class BattleController {
    * @returns 플레이어가 패배하면 true
    */
   isDefeat(): boolean {
-    return !this.hero.isAlive();
+    const heroesAlive = this.heroes.some(hero => hero.isAlive());
+    return !heroesAlive;
   }
 
   /**
-   * 플레이어 캐릭터를 가져옵니다
-   * @returns 플레이어 캐릭터
+   * 플레이어 캐릭터들을 가져옵니다
+   * @returns 플레이어 캐릭터 배열
    */
-  getHero(): Character {
-    return this.hero;
+  getHeroes(): Character[] {
+    return this.heroes;
   }
 
   /**
-   * 적 캐릭터를 가져옵니다
-   * @returns 적 캐릭터
+   * 적 캐릭터들을 가져옵니다
+   * @returns 적 캐릭터 배열
    */
-  getEnemy(): Character {
-    return this.enemy;
+  getEnemies(): Character[] {
+    return this.enemies;
   }
 }
 
