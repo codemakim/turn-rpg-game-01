@@ -35,17 +35,12 @@ export class AnimationManager {
 
   /**
    * 데미지 애니메이션 표시
-   * @param target 대상 캐릭터
+   * @param position 위치 정보
    * @param damage 데미지량
    * @param isCritical 크리티컬 여부
    */
-  private showDamageAnimation(target: any, damage: number, isCritical: boolean): void {
-    // 타겟의 위치 정보를 가져와야 함 (UI 컴포넌트에서 제공)
-    // 현재는 임시로 화면 중앙에 표시
-    const x = 640;
-    const y = 360;
-
-    const damageText = this.scene.add.text(x, y - 30, `-${damage}`, {
+  public showDamageAnimation(position: { x: number; y: number }, damage: number, isCritical: boolean): void {
+    const damageText = this.scene.add.text(position.x, position.y - 30, `-${damage}`, {
       fontSize: '24px',
       color: isCritical ? '#ff0000' : '#ffff00',
       fontStyle: 'bold',
@@ -54,7 +49,7 @@ export class AnimationManager {
     // 데미지 텍스트 애니메이션
     this.scene.tweens.add({
       targets: damageText,
-      y: y - 80,
+      y: position.y - 80,
       alpha: 0,
       duration: 1000,
       ease: 'Power2',
@@ -64,16 +59,11 @@ export class AnimationManager {
 
   /**
    * 회복 애니메이션 표시
-   * @param target 대상 캐릭터
+   * @param position 위치 정보
    * @param amount 회복량
    */
-  private showHealAnimation(target: any, amount: number): void {
-    // 타겟의 위치 정보를 가져와야 함 (UI 컴포넌트에서 제공)
-    // 현재는 임시로 화면 중앙에 표시
-    const x = 640;
-    const y = 360;
-
-    const healText = this.scene.add.text(x, y - 30, `+${amount}`, {
+  public showHealAnimation(position: { x: number; y: number }, amount: number): void {
+    const healText = this.scene.add.text(position.x, position.y - 30, `+${amount}`, {
       fontSize: '24px',
       color: '#00ff00',
       fontStyle: 'bold',
@@ -82,7 +72,7 @@ export class AnimationManager {
     // 회복 텍스트 애니메이션
     this.scene.tweens.add({
       targets: healText,
-      y: y - 80,
+      y: position.y - 80,
       alpha: 0,
       duration: 1000,
       ease: 'Power2',
