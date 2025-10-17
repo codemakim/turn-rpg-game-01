@@ -31,16 +31,20 @@ src/
 
 **흐름**:
 
-1. Phaser 게임 설정 정의
+1. Phaser 게임 설정 정의 (800x600, PhaserBattleScene 시작)
 2. Phaser.Game 인스턴스 생성
-3. 첫 씬 자동 시작
+3. PhaserBattleScene 자동 시작
 
 **코드**:
 
 ```typescript
-Phaser 설정 (크기, 씬 등)
-→ new Phaser.Game(config)
-→ PhaserBattleScene 자동 시작
+const config = {
+  type: Phaser.AUTO,
+  width: 800,
+  height: 600,
+  scene: [PhaserBattleScene]
+};
+new Phaser.Game(config);
 ```
 
 ---
@@ -81,6 +85,7 @@ MapScene extends Scene
 **역할**: Phaser 기반 전투 화면 (로직은 BattleController 재사용!)
 
 **핵심 개념**:
+
 - **로직 재사용**: BattleController, EnemyAI 그대로 사용
 - **UI만 Phaser**: Phaser의 Graphics, Text, 입력 시스템 활용
 
@@ -89,26 +94,38 @@ MapScene extends Scene
 ```typescript
 create() {
   // 씬 초기화
-  // 캐릭터 생성
+  // 캐릭터 생성 (용사, 슬라임)
   // BattleController 생성 (로직 재사용!)
-  // Phaser UI 생성
+  // 이벤트 리스너 등록 (턴 시작, 데미지, 힐, 턴 종료)
+  // Phaser UI 생성 (HP/MP 바, 버튼, 텍스트)
 }
 
 update(time, delta) {
   // 매 프레임 호출 (Phaser가 자동)
-  // controller.update()로 턴 관리
+  // 전투 종료 확인
+  // controller.update()로 턴 관리 (즉시 점프 시스템)
   // UI 업데이트
 }
 
 drawStatusBar() {
   // Phaser Graphics로 HP/MP 바 그리기
 }
+
+showDamageAnimation() {
+  // Phaser Tweens로 데미지 숫자 애니메이션
+}
+
+shakeCharacter() {
+  // Phaser Tweens로 캐릭터 흔들림 효과
+}
 ```
 
 **장점**:
-- Phaser 애니메이션 사용 가능
+
+- Phaser 애니메이션 사용 가능 (데미지 숫자, 캐릭터 흔들림)
 - 터치/마우스 자동 처리
 - 씬 전환 시스템 내장
+- 300ms 딜레이로 안정적인 턴 전환
 
 ---
 
@@ -224,7 +241,7 @@ calculateDamage({
 
 ---
 
-### 🎮 BattleController.ts - 전투 로직 컨트롤러 (NEW!)
+### 🎮 BattleController.ts - 전투 로직 컨트롤러
 
 **역할**: 전투의 핵심 로직만 담당 (UI와 분리)
 
@@ -248,149 +265,88 @@ class BattleController {
 
 **이벤트 타입**:
 
-- `turn-start`: 턴 시작
+- `turn-start`: 턴 시작 (플레이어/적 턴 시작 알림)
 - `attack`: 공격 실행
 - `skill`: 스킬 사용
-- `damage/heal`: 데미지/회복 발생
+- `damage`: 데미지 발생 (애니메이션용)
+- `heal`: 회복 발생 (애니메이션용)
 - `turn-end`: 턴 종료
 
----
+**장점**:
 
-### 🖼️ BattleUI.ts - 전투 UI 관리자 (NEW!)
+- UI와 로직 완전 분리
+- 테스트 용이성
+- 재사용 가능한 전투 로직
 
-**역할**: 전투 화면의 모든 UI 요소 관리
+### ⏱️ TurnQueue.ts - 턴 순서 관리 (즉시 점프 시스템)
 
-**보유 객체**:
+**역할**: 턴 게이지 관리 및 즉시 점프 시스템으로 대기 시간 제거
 
-```typescript
-class BattleUI {
-  renderer              // 렌더링 관리자
-  inputManager          // 입력 처리
-  heroDisplay, enemyDisplay  // 캐릭터 표시
-  attackButton          // 공격 버튼
-  skillButtons[]        // 스킬 버튼들
-  battleLog[]           // 전투 로그
-  
-  createSkillButtons()      // 스킬 버튼 생성
-  enablePlayerActions()     // 버튼 활성화
-  disablePlayerActions()    // 버튼 비활성화
-  addLog(message)           // 로그 추가
-  render()                  // UI 렌더링
-}
-```
-
----
-
-### 🎬 BattleScene.ts - 전투 씬 (리팩토링됨!)
-
-**역할**: BattleController와 BattleUI를 조합 (단순화됨!)
-
-**구조**:
+**핵심 기능**:
 
 ```typescript
-class BattleScene extends Scene {
-  controller: BattleController  // 전투 로직
-  ui: BattleUI                  // UI 관리
+class TurnQueue {
+  entries: TurnEntry[]  // 캐릭터별 턴 게이지
   
-  constructor() {
-    // Controller 생성
-    // UI 생성
-    // 이벤트 연결 (Controller → UI 로그)
+  updateGauges(deltaTime) {
+    // 점프 조건 확인: 다음 업데이트까지 아무도 100 도달 못할 때
+    // 가장 빨리 100 도달할 캐릭터까지 시간 계산
+    // 모든 캐릭터를 점프 시점으로 동시 업데이트
   }
   
-  update(deltaTime) {
-    nextActor = controller.update(deltaTime)
-    if (nextActor === hero) {
-      ui.enablePlayerActions()
-    }
+  getNextActor() {
+    // turnGauge >= 100인 캐릭터 중 가장 높은 게이지 반환
   }
   
-  render() {
-    ui.render(isVictory, isDefeat)
-  }
-  
-  handleAttack() {
-    controller.executeAttack()
+  consumeTurn(character) {
+    // 행동한 캐릭터만 100 차감 (다른 캐릭터 게이지 유지)
   }
 }
 ```
 
-**장점**: 319줄 → 157줄 (단순화), 로직과 UI 분리
-
-**핵심 로직**:
-
-#### update(deltaTime)
+**즉시 점프 시스템**:
 
 ```
-1. 전투 종료 체크
-2. turnQueue.updateGauges(deltaTime)
-3. nextActor = turnQueue.getNextActor()
-4. if (nextActor === hero):
-     - isPlayerTurn = true
-     - 버튼 활성화 (MP 체크)
-   else:
-     - executeEnemyTurn() (자동 공격)
-5. 캐릭터 디스플레이 업데이트
+기존: 0 → 16 → 32 → ... → 100 (6.25초 대기)
+수정: 0 → 즉시 점프 → 100 (대기 시간 제거)
 ```
 
-#### handleAttack()
+**장점**:
 
-```
-1. 데미지 계산
-2. enemy.takeDamage(damage)
-3. 로그 추가
-4. turnQueue.consumeTurn(hero)
-5. 버튼 비활성화
-```
-
-#### handleSkill(skill)
-
-```
-1. target 결정 (self or enemy)
-2. skill.use(hero, [target])
-3. 성공 시:
-   - 로그 추가
-   - 턴 소비
-   - 버튼 비활성화
-4. 실패 시:
-   - "MP 부족" 메시지
-```
-
-#### render()
-
-```
-1. 배경 그리기
-2. 제목 그리기
-3. 모든 UI 요소 렌더링 (renderer.renderAll())
-4. 전투 로그 표시
-5. 승리/패배 화면 (전투 종료 시)
-```
+- 턴 게이지 대기 시간 완전 제거
+- 일관된 턴 순서 보장
+- 속도 차이에 따른 공정한 순서 결정
 
 ---
 
 ## 🎯 데이터 흐름 예시
 
-### 플레이어가 "강타" 사용 시
+### 플레이어가 "강타" 사용 시 (Phaser 기반)
 
 ```
-1. 플레이어 클릭
+1. 플레이어 클릭 (Phaser 입력 시스템)
    ↓
-2. InputManager가 클릭 위치 확인
+2. PhaserBattleScene.handleSkill(강타스킬) 호출
    ↓
-3. Button.handleClick() 실행
+3. BattleController.executeSkill(강타스킬)
    ↓
-4. BattleScene.handleSkill(강타스킬) 호출
-   ↓
-5. Skill.use(hero, [enemy])
+4. Skill.use(hero, [enemy])
    - hero.mp -= 10
    - enemy.takeDamage(50)
    ↓
-6. TurnQueue.consumeTurn(hero)
-   - hero의 turnGauge -= 100
+5. 이벤트 발생 (skill, damage)
    ↓
-7. 버튼 비활성화
+6. PhaserBattleScene에서 이벤트 수신
+   - 데미지 애니메이션 (showDamageAnimation)
+   - 캐릭터 흔들림 (shakeCharacter)
+   - 전투 로그 추가
    ↓
-8. 다음 프레임에서 render()로 화면 업데이트
+7. TurnQueue.consumeTurn(hero)
+   - hero의 turnGauge -= 100 (다른 캐릭터는 유지)
+   ↓
+8. turn-end 이벤트 발생
+   ↓
+9. 300ms 딜레이 후 다음 턴 처리
 ```
 
 ---
@@ -401,12 +357,12 @@ class BattleScene extends Scene {
 
 - `Character.test.ts`: 11개 테스트
 - `DamageCalculator.test.ts`: 11개 테스트
-- `TurnQueue.test.ts`: 13개 테스트
+- `TurnQueue.test.ts`: 13개 테스트 (즉시 점프 시스템 테스트 포함)
 - `Skill.test.ts`: 12개 테스트
-- `StatusBar.test.ts`: 8개 테스트
+- `EnemyAI.test.ts`: 10개 테스트
 - `BattleSimulation.test.ts`: 4개 통합 테스트
 
-**총 59개 테스트 - 모두 통과!**
+**총 61개 테스트 - 모두 통과!**
 
 ---
 
@@ -609,23 +565,26 @@ npm run test:ui   # UI에서 테스트 확인
 
 ## 🚀 완료된 Phase
 
-### ✅ Phase 1-4 완료!
+### ✅ Phase 1-5a 완료
 
 - **Phase 1**: 핵심 전투 시스템 (Character, TurnQueue, DamageCalculator)
 - **Phase 2**: UI 렌더링 (Canvas → Phaser로 전환)
 - **Phase 3**: 스킬 시스템 (MP 관리, 다양한 효과)
 - **Phase 4**: 적 AI (상황별 행동 결정)
+- **Phase 5a**: 폴리싱 완료
+  - 🎨 애니메이션 (Phaser Tweens) - 데미지 숫자, 캐릭터 흔들림, 버튼 호버
+  - ⚡ 즉시 점프 시스템 - 턴 게이지 대기 시간 완전 제거
+  - 🎮 안정적인 턴 전환 - 300ms 딜레이로 동시 행동 방지
 
-### 다음 Phase 5: 게임 확장
+### 다음 Phase 5b: 콘텐츠 확장
 
-- 🎨 애니메이션 (Phaser Tweens 활용)
 - 🔊 사운드 (Phaser 오디오 시스템)
 - 🗺️ 맵/필드 씬 추가
 - 🛒 상점 시스템
 - 🎒 인벤토리 & 장비
 - 💾 세이브/로드
 
-**Phaser 덕분에 개발 속도 10배 향상!**
+**현재 상태**: 61개 테스트 통과, 완전한 턴제 전투 시스템 완성!
 
 ---
 
