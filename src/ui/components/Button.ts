@@ -161,4 +161,14 @@ export class Button {
   public isButtonEnabled(): boolean {
     return this.isEnabled;
   }
+
+  /**
+   * 버튼 위치 반환
+   */
+  public getPosition(): { x: number; y: number } {
+    return {
+      x: this.textObject.x,
+      y: this.textObject.y,
+    };
+  }
 }

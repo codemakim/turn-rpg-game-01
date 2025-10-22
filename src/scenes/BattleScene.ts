@@ -51,8 +51,12 @@ export class BattleScene extends Phaser.Scene {
     this.animationManager = new AnimationManager(this);
     this.inputHandler = new BattleInputHandler();
     this.characterFactory = new BattleCharacterFactory();
-    this.layoutManager = new BattleLayoutManager();
+    // 화면 크기에 맞춰 레이아웃 매니저 초기화
+    this.layoutManager = new BattleLayoutManager(this.scale.width, this.scale.height);
     this.uiManager = new BattleUIManager(this);
+
+    // 화면 크기 변경 이벤트 리스너 등록
+    this.scale.on('resize', this.onResize, this);
   }
 
   private calculateLayout(): LayoutInfo {
@@ -99,7 +103,33 @@ export class BattleScene extends Phaser.Scene {
 
 
 
+  /**
+   * 화면 크기 변경 시 호출되는 핸들러
+   */
+  private onResize(gameSize: Phaser.Structs.Size): void {
+    console.log(`🔄 화면 크기 변경: ${gameSize.width}x${gameSize.height}`);
+
+    // 레이아웃 매니저 업데이트
+    this.layoutManager.updateScreenSize(gameSize.width, gameSize.height);
+
+    // UI 재배치
+    this.rearrangeUI();
+  }
+
+  /**
+   * UI 요소들을 새로운 레이아웃에 맞춰 재배치
+   */
+  private rearrangeUI(): void {
+    if (!this.uiManager) return;
+
+    const layout = this.calculateLayout();
+    this.uiManager.rearrangeLayout(layout);
+  }
+
   destroy(): void {
+    // 이벤트 리스너 제거
+    this.scale.off('resize', this.onResize, this);
+
     this.eventManager.destroy();
     this.uiManager.destroy();
     this.animationManager.destroy();

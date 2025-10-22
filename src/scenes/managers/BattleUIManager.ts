@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { Character } from '@/characters/Character';
 import { CharacterUI } from '@/ui/components/CharacterUI';
-import { Button } from '@/ui/components/Button';
+import { ButtonGroup } from '@/ui/components/ButtonGroup';
 import { type LayoutInfo } from './BattleLayoutManager';
 
 /**
@@ -11,24 +11,27 @@ import { type LayoutInfo } from './BattleLayoutManager';
 export class BattleUIManager {
   private scene: Phaser.Scene;
   private characterUIs: CharacterUI[] = [];
-  private attackButton!: Button;
-  private skillButtons: Button[] = [];
+  private buttonGroup!: ButtonGroup;
 
   constructor(scene: Phaser.Scene) {
     this.scene = scene;
   }
 
   /**
-   * 배경을 생성합니다
+   * 배경을 생성합니다 (반응형)
    */
   public createBackground(): void {
+    // 반응형 화면 크기에 맞춰 배경 생성
+    const screenWidth = this.scene.scale.width;
+    const screenHeight = this.scene.scale.height;
+
     // 그라데이션 배경
     const graphics = this.scene.add.graphics();
     graphics.fillGradientStyle(0x1a1a2e, 0x1a1a2e, 0x16213e, 0x16213e);
-    graphics.fillRect(0, 0, 1280, 720);
+    graphics.fillRect(0, 0, screenWidth, screenHeight);
 
-    // 제목 표시
-    this.scene.add.text(640, 50, '턴제 RPG 전투', {
+    // 제목 표시 (중앙 정렬)
+    this.scene.add.text(screenWidth / 2, 50, '턴제 RPG 전투', {
       fontSize: '32px',
       color: '#ffffff',
       fontStyle: 'bold',
@@ -76,14 +79,16 @@ export class BattleUIManager {
    * @param layout 레이아웃 정보
    */
   public createButtonUI(layout: LayoutInfo): void {
-    // 공격 버튼
-    this.attackButton = new Button(this.scene, {
+    // 버튼 그룹 생성 (모든 버튼을 하나의 컨테이너로 관리)
+    this.buttonGroup = new ButtonGroup(this.scene, {
       x: layout.buttonArea.x,
       y: layout.buttonArea.y,
-      text: '공격',
-      buttonId: 'attack',
+      width: layout.buttonArea.width,
+      height: layout.buttonArea.height,
     });
-    this.attackButton.disable();
+
+    // 공격 버튼 생성
+    this.buttonGroup.createAttackButton();
   }
 
   /**
@@ -91,37 +96,15 @@ export class BattleUIManager {
    * @param actor 현재 행동할 캐릭터
    */
   public enableButtons(actor: Character): void {
-    this.attackButton.enable();
-
-    // 기존 스킬 버튼들 제거
-    this.skillButtons.forEach(btn => btn.destroy());
-    this.skillButtons = [];
-
-    // 스킬 버튼들 생성
-    actor.skills.forEach((skill, index) => {
-      const button = new Button(this.scene, {
-        x: 300 + index * 170,
-        y: 600,
-        text: `${skill.name} (${skill.mpCost})`,
-        buttonId: `skill-${skill.id}`,
-        backgroundColor: skill.canUse(actor) ? '#2196F3' : '#666666',
-      });
-
-      if (!skill.canUse(actor)) {
-        button.disable();
-      }
-
-      this.skillButtons.push(button);
-    });
+    // 버튼 그룹에서 모든 버튼 활성화
+    this.buttonGroup.enableButtons(actor);
   }
 
   /**
    * 모든 버튼을 비활성화합니다
    */
   public disableAllButtons(): void {
-    this.attackButton.disable();
-    this.skillButtons.forEach(btn => btn.destroy());
-    this.skillButtons = [];
+    this.buttonGroup.disableAllButtons();
   }
 
   /**
@@ -173,12 +156,52 @@ export class BattleUIManager {
   }
 
   /**
+   * 레이아웃 변경 시 UI 재배치
+   * @param layout 새로운 레이아웃 정보
+   */
+  public rearrangeLayout(layout: LayoutInfo): void {
+    // 캐릭터 UI 위치 업데이트
+    this.characterUIs.forEach((characterUI) => {
+      if (characterUI.isHero) {
+        // 아군 캐릭터 위치 업데이트
+        const heroIndex = this.characterUIs.filter(ui => ui.isHero).indexOf(characterUI);
+        if (heroIndex >= 0 && layout.heroPositions[heroIndex]) {
+          characterUI.setPosition(layout.heroPositions[heroIndex]);
+        }
+      } else {
+        // 적군 캐릭터 위치 업데이트
+        const enemyIndex = this.characterUIs.filter(ui => !ui.isHero).indexOf(characterUI);
+        if (enemyIndex >= 0 && layout.enemyPositions[enemyIndex]) {
+          characterUI.setPosition(layout.enemyPositions[enemyIndex]);
+        }
+      }
+    });
+
+    // 버튼 그룹 위치 업데이트 (하나의 컨테이너로 관리)
+    this.buttonGroup.setPosition(layout.buttonArea.x, layout.buttonArea.y);
+  }
+
+  /**
+   * 공격 버튼 반환 (테스트용)
+   */
+  public getAttackButton() {
+    return this.buttonGroup.getAttackButton();
+  }
+
+  /**
+   * 스킬 버튼들 반환 (테스트용)
+   */
+  public getSkillButtons() {
+    return this.buttonGroup.getSkillButtons();
+  }
+
+
+  /**
    * UI 관리자 파괴
    */
   public destroy(): void {
     // 모든 UI 컴포넌트 정리
     this.characterUIs.forEach(characterUI => characterUI.destroy());
-    this.attackButton.destroy();
-    this.skillButtons.forEach(btn => btn.destroy());
+    this.buttonGroup.destroy();
   }
 }

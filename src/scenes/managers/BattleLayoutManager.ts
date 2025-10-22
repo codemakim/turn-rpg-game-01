@@ -1,4 +1,5 @@
 import { Character } from '@/characters/Character';
+import { ResponsiveLayout, type CharacterLayout, type UILayout } from '@/core/ResponsiveLayout';
 
 /**
  * 레이아웃 정보 인터페이스
@@ -19,57 +20,55 @@ export interface LayoutInfo {
  * 캐릭터 위치 및 UI 요소 배치를 담당
  */
 export class BattleLayoutManager {
-  private readonly SCREEN_WIDTH = 1280;
-  private readonly SCREEN_HEIGHT = 720;
-  private readonly HERO_START_X = 200;
-  private readonly ENEMY_START_X = 1080;
-  private readonly CHARACTER_START_Y = 150;
-  private readonly CHARACTER_SPACING = 120;
-  private readonly BUTTON_AREA_X = 100;
-  private readonly BUTTON_AREA_Y = 600;
-  private readonly BUTTON_AREA_WIDTH = 1080;
-  private readonly BUTTON_AREA_HEIGHT = 80;
+  private responsiveLayout: ResponsiveLayout;
+  private currentWidth: number;
+  private currentHeight: number;
+
+  constructor(width: number = 1280, height: number = 720) {
+    this.currentWidth = width;
+    this.currentHeight = height;
+    this.responsiveLayout = new ResponsiveLayout(width, height);
+  }
 
   /**
-   * 전체 레이아웃을 계산합니다
+   * 전체 레이아웃을 계산합니다 (반응형)
    * @param heroes 아군 캐릭터 배열
    * @param enemies 적 캐릭터 배열
    * @returns 레이아웃 정보
    */
   public calculateLayout(heroes: Character[], enemies: Character[]): LayoutInfo {
+    const characterLayout = this.responsiveLayout.calculateCharacterLayout(heroes.length, enemies.length);
+    const uiLayout = this.responsiveLayout.calculateUILayout();
+
     return {
-      heroPositions: this.calculateHeroPositions(heroes),
-      enemyPositions: this.calculateEnemyPositions(enemies),
-      buttonArea: this.calculateButtonArea(),
+      heroPositions: characterLayout.heroPositions,
+      enemyPositions: characterLayout.enemyPositions,
+      buttonArea: uiLayout.buttonArea,
     };
   }
 
   /**
-   * 아군 캐릭터들의 위치를 계산합니다
+   * 아군 캐릭터들의 위치를 계산합니다 (반응형)
    * @param heroes 아군 캐릭터 배열
    * @returns 아군 위치 배열
    */
   public calculateHeroPositions(heroes: Character[]): { x: number; y: number }[] {
-    return heroes.map((_, index) => ({
-      x: this.HERO_START_X,
-      y: this.CHARACTER_START_Y + index * this.CHARACTER_SPACING,
-    }));
+    const characterLayout = this.responsiveLayout.calculateCharacterLayout(heroes.length, 0);
+    return characterLayout.heroPositions;
   }
 
   /**
-   * 적 캐릭터들의 위치를 계산합니다
+   * 적 캐릭터들의 위치를 계산합니다 (반응형)
    * @param enemies 적 캐릭터 배열
    * @returns 적 위치 배열
    */
   public calculateEnemyPositions(enemies: Character[]): { x: number; y: number }[] {
-    return enemies.map((_, index) => ({
-      x: this.ENEMY_START_X,
-      y: this.CHARACTER_START_Y + index * this.CHARACTER_SPACING,
-    }));
+    const characterLayout = this.responsiveLayout.calculateCharacterLayout(0, enemies.length);
+    return characterLayout.enemyPositions;
   }
 
   /**
-   * 버튼 영역 정보를 계산합니다
+   * 버튼 영역 정보를 계산합니다 (반응형)
    * @returns 버튼 영역 정보
    */
   public calculateButtonArea(): {
@@ -78,12 +77,8 @@ export class BattleLayoutManager {
     width: number;
     height: number;
   } {
-    return {
-      x: this.BUTTON_AREA_X,
-      y: this.BUTTON_AREA_Y,
-      width: this.BUTTON_AREA_WIDTH,
-      height: this.BUTTON_AREA_HEIGHT,
-    };
+    const uiLayout = this.responsiveLayout.calculateUILayout();
+    return uiLayout.buttonArea;
   }
 
   /**
@@ -92,8 +87,40 @@ export class BattleLayoutManager {
    */
   public getScreenSize(): { width: number; height: number } {
     return {
-      width: this.SCREEN_WIDTH,
-      height: this.SCREEN_HEIGHT,
+      width: this.currentWidth,
+      height: this.currentHeight,
     };
+  }
+
+  /**
+   * 화면 크기 변경 시 레이아웃 업데이트
+   * @param width 새로운 화면 너비
+   * @param height 새로운 화면 높이
+   */
+  public updateScreenSize(width: number, height: number): void {
+    this.currentWidth = width;
+    this.currentHeight = height;
+    this.responsiveLayout.updateLayout(width, height);
+  }
+
+  /**
+   * 현재 반응형 레이아웃 설정 반환
+   */
+  public getResponsiveConfig() {
+    return this.responsiveLayout.getConfig();
+  }
+
+  /**
+   * 캐릭터 레이아웃 정보 반환
+   */
+  public getCharacterLayout(heroCount: number, enemyCount: number): CharacterLayout {
+    return this.responsiveLayout.calculateCharacterLayout(heroCount, enemyCount);
+  }
+
+  /**
+   * UI 레이아웃 정보 반환
+   */
+  public getUILayout(): UILayout {
+    return this.responsiveLayout.calculateUILayout();
   }
 }
