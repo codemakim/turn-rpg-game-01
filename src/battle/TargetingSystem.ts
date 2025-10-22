@@ -64,7 +64,13 @@ export class TargetingSystem {
     this.selectedTargets = [];
     this.state = 'SELECTING';
 
+    console.log(`타겟팅 시작: ${skill.name} (${skill.targetType})`);
+    console.log(`아군: ${heroes.length}명`, heroes.map(h => h.name));
+    console.log(`적군: ${enemies.length}명`, enemies.map(e => e.name));
+
     this.updateValidTargets();
+
+    console.log(`유효한 대상: ${this.validTargets.length}명`, this.validTargets.map(t => t.name));
   }
 
   /**

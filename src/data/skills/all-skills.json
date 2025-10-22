@@ -1,0 +1,109 @@
+{
+  "skills": {
+    "basic-attack": {
+      "id": "basic-attack",
+      "name": "기본 공격",
+      "description": "일반적인 공격",
+      "mpCost": 0,
+      "targetType": "single-enemy",
+      "effects": [
+        {
+          "type": "damage",
+          "value": 100
+        }
+      ],
+      "category": "physical",
+      "rarity": "common"
+    },
+    "fireball": {
+      "id": "fireball",
+      "name": "파이어볼",
+      "description": "화염 구체 공격",
+      "mpCost": 20,
+      "targetType": "single-enemy",
+      "effects": [
+        {
+          "type": "damage",
+          "value": 200
+        }
+      ],
+      "category": "magic",
+      "rarity": "uncommon"
+    },
+    "strong-attack": {
+      "id": "strong-attack",
+      "name": "강타",
+      "description": "강력한 공격",
+      "mpCost": 10,
+      "targetType": "single-enemy",
+      "effects": [
+        {
+          "type": "damage",
+          "value": 180
+        }
+      ],
+      "category": "physical",
+      "rarity": "common"
+    },
+    "heal": {
+      "id": "heal",
+      "name": "힐",
+      "description": "체력 회복",
+      "mpCost": 15,
+      "targetType": "single-ally",
+      "effects": [
+        {
+          "type": "heal",
+          "value": 30
+        }
+      ],
+      "category": "magic",
+      "rarity": "common"
+    },
+    "group-heal": {
+      "id": "group-heal",
+      "name": "그룹 힐",
+      "description": "아군 전체 체력 회복",
+      "mpCost": 25,
+      "targetType": "all-allies",
+      "effects": [
+        {
+          "type": "heal",
+          "value": 20
+        }
+      ],
+      "category": "magic",
+      "rarity": "rare"
+    },
+    "goblin-attack": {
+      "id": "goblin-attack",
+      "name": "고블린 슬래시",
+      "description": "빠른 베기 공격",
+      "mpCost": 8,
+      "targetType": "single-enemy",
+      "effects": [
+        {
+          "type": "damage",
+          "value": 150
+        }
+      ],
+      "category": "physical",
+      "rarity": "common"
+    },
+    "slime-attack": {
+      "id": "slime-attack",
+      "name": "슬라임 독침",
+      "description": "독이 묻은 공격",
+      "mpCost": 10,
+      "targetType": "single-enemy",
+      "effects": [
+        {
+          "type": "damage",
+          "value": 160
+        }
+      ],
+      "category": "poison",
+      "rarity": "common"
+    }
+  }
+}

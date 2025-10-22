@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { TargetingManager } from './TargetingManager';
+import { TargetingManager } from '@/scenes/managers/TargetingManager';
 import { Character } from '@/characters/Character';
 import { Skill } from '@/battle/Skill';
 
@@ -56,20 +56,20 @@ describe('TargetingManager', () => {
 
   describe('타겟팅 모드 시작', () => {
     it('타겟팅 모드를 시작할 수 있어야 한다', () => {
-      const result = targetingManager.startTargetingMode(singleTargetSkill, [hero], [enemy]);
+      const result = targetingManager.startTargetingMode(singleTargetSkill, [hero], [enemy], hero);
 
       expect(result.success).toBe(true);
       expect(targetingManager.isTargetingMode()).toBe(true);
     });
 
     it('타겟팅 모드 시작 시 입력 이벤트가 등록되어야 한다', () => {
-      targetingManager.startTargetingMode(singleTargetSkill, [hero], [enemy]);
+      targetingManager.startTargetingMode(singleTargetSkill, [hero], [enemy], hero);
 
       expect(targetingManager.hasInputListeners()).toBe(true);
     });
 
     it('타겟팅 모드 시작 시 유효한 대상들이 표시되어야 한다', () => {
-      targetingManager.startTargetingMode(singleTargetSkill, [hero], [enemy]);
+      targetingManager.startTargetingMode(singleTargetSkill, [hero], [enemy], hero);
 
       const validTargets = targetingManager.getValidTargets();
       expect(validTargets).toHaveLength(1);
@@ -79,7 +79,7 @@ describe('TargetingManager', () => {
 
   describe('대상 선택 처리', () => {
     beforeEach(() => {
-      targetingManager.startTargetingMode(singleTargetSkill, [hero], [enemy]);
+      targetingManager.startTargetingMode(singleTargetSkill, [hero], [enemy], hero);
     });
 
     it('유효한 대상을 선택할 수 있어야 한다', () => {
@@ -105,7 +105,7 @@ describe('TargetingManager', () => {
 
   describe('타겟팅 취소', () => {
     beforeEach(() => {
-      targetingManager.startTargetingMode(singleTargetSkill, [hero], [enemy]);
+      targetingManager.startTargetingMode(singleTargetSkill, [hero], [enemy], hero);
     });
 
     it('타겟팅을 취소할 수 있어야 한다', () => {
@@ -131,7 +131,7 @@ describe('TargetingManager', () => {
 
   describe('타겟팅 완료', () => {
     beforeEach(() => {
-      targetingManager.startTargetingMode(singleTargetSkill, [hero], [enemy]);
+      targetingManager.startTargetingMode(singleTargetSkill, [hero], [enemy], hero);
       targetingManager.selectTarget(enemy);
     });
 
@@ -145,8 +145,9 @@ describe('TargetingManager', () => {
     it('타겟팅 완료 시 선택된 대상을 반환해야 한다', () => {
       const result = targetingManager.completeTargeting();
 
+      expect(result.targets).toBeDefined();
       expect(result.targets).toHaveLength(1);
-      expect(result.targets[0]).toBe(enemy);
+      expect(result.targets![0]).toBe(enemy);
     });
 
     it('타겟팅 완료 시 화살표가 숨겨져야 한다', () => {
@@ -158,7 +159,7 @@ describe('TargetingManager', () => {
 
   describe('입력 이벤트 처리', () => {
     beforeEach(() => {
-      targetingManager.startTargetingMode(singleTargetSkill, [hero], [enemy]);
+      targetingManager.startTargetingMode(singleTargetSkill, [hero], [enemy], hero);
     });
 
     it('마우스 클릭 이벤트를 처리할 수 있어야 한다', () => {
@@ -198,13 +199,13 @@ describe('TargetingManager', () => {
     });
 
     it('타겟팅 상태를 확인할 수 있어야 한다', () => {
-      targetingManager.startTargetingMode(singleTargetSkill, [hero], [enemy]);
+      targetingManager.startTargetingMode(singleTargetSkill, [hero], [enemy], hero);
 
       expect(targetingManager.getTargetingState()).toBe('SELECTING');
     });
 
     it('타겟팅 완료 후 상태가 초기화되어야 한다', () => {
-      targetingManager.startTargetingMode(singleTargetSkill, [hero], [enemy]);
+      targetingManager.startTargetingMode(singleTargetSkill, [hero], [enemy], hero);
       targetingManager.selectTarget(enemy);
       targetingManager.completeTargeting();
 
@@ -215,7 +216,7 @@ describe('TargetingManager', () => {
 
   describe('타겟팅 UI 업데이트', () => {
     it('캐릭터 위치 변경 시 화살표 위치를 업데이트해야 한다', () => {
-      targetingManager.startTargetingMode(singleTargetSkill, [hero], [enemy]);
+      targetingManager.startTargetingMode(singleTargetSkill, [hero], [enemy], hero);
       targetingManager.selectTarget(enemy);
 
       // 캐릭터 위치 변경
@@ -228,10 +229,10 @@ describe('TargetingManager', () => {
     });
 
     it('화면 크기 변경 시 타겟팅 UI를 재배치해야 한다', () => {
-      targetingManager.startTargetingMode(singleTargetSkill, [hero], [enemy]);
+      targetingManager.startTargetingMode(singleTargetSkill, [hero], [enemy], hero);
       targetingManager.selectTarget(enemy);
 
-      targetingManager.onResize(800, 600);
+      targetingManager.onResize();
 
       expect(targetingManager.isTargetingArrowVisible()).toBe(true);
     });
@@ -239,7 +240,7 @@ describe('TargetingManager', () => {
 
   describe('타겟팅 매니저 정리', () => {
     it('매니저 파괴 시 모든 리소스가 정리되어야 한다', () => {
-      targetingManager.startTargetingMode(singleTargetSkill, [hero], [enemy]);
+      targetingManager.startTargetingMode(singleTargetSkill, [hero], [enemy], hero);
       targetingManager.selectTarget(enemy);
 
       targetingManager.destroy();

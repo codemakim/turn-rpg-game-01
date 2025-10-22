@@ -28,6 +28,7 @@ export class CharacterUIManager {
     // 아군 캐릭터 UI 생성
     heroes.forEach((hero, index) => {
       const position = layout.heroPositions[index];
+      console.log(`아군 ${index} (${hero.name}) 위치:`, position);
       if (position) {
         const characterUI = new CharacterUI(this.scene, {
           x: position.x,
@@ -36,6 +37,7 @@ export class CharacterUIManager {
           isHero: true,
         });
         this.characterUIs.push(characterUI);
+        console.log(`아군 ${hero.name} 최종 포지션:`, hero.position);
       }
     });
 

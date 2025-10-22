@@ -15,7 +15,6 @@ describe('Attack Skill System', () => {
     enemy1 = new Character({ name: '슬라임1', hp: 50, attack: 10, defense: 5, speed: 8 });
     enemy2 = new Character({ name: '슬라임2', hp: 50, attack: 10, defense: 5, speed: 8 });
 
-    inputHandler.setCharacters([hero], [enemy1, enemy2]);
   });
 
   describe('기본 공격 스킬', () => {

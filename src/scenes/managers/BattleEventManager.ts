@@ -4,6 +4,8 @@ import { BattleInputHandler } from '@/input/BattleInputHandler';
 import { BattleUIManager } from './BattleUIManager';
 import { AnimationManager } from '@/animation/AnimationManager';
 import { eventBus } from '@/core/EventBus';
+import { Skill } from '@/battle/Skill';
+import type { GameEvents } from '@/types';
 
 /**
  * 전투 이벤트 관리자
@@ -16,6 +18,7 @@ export class BattleEventManager {
   private uiManager: BattleUIManager;
   private animationManager: AnimationManager;
   private enemies: Character[];
+  private heroes: Character[];
 
   // 전투 상태 관리
   private currentActor: Character | null = null;
@@ -28,6 +31,7 @@ export class BattleEventManager {
     inputHandler: BattleInputHandler,
     uiManager: BattleUIManager,
     animationManager: AnimationManager,
+    heroes: Character[],
     enemies: Character[]
   ) {
     this.scene = scene;
@@ -35,6 +39,7 @@ export class BattleEventManager {
     this.inputHandler = inputHandler;
     this.uiManager = uiManager;
     this.animationManager = animationManager;
+    this.heroes = heroes;
     this.enemies = enemies;
 
     this.setupEventListeners();
@@ -82,42 +87,36 @@ export class BattleEventManager {
    * BattleInputHandler 이벤트를 설정합니다
    */
   private setupInputHandlerEvents(): void {
-    // 공격 이벤트 처리
-    eventBus.on('battle:attack', (data: any) => {
-      console.log('공격 이벤트 수신:', data);
+    // 공격 이벤트 처리 (수동 타겟팅용)
+    eventBus.on('battle:attack', (data: GameEvents['battle:attack']) => {
       if (this.currentActor && data.target) {
         this.controller.executeAttack(this.currentActor, data.target);
-        // processingTurn은 turn-end 이벤트에서 300ms 딜레이 후 false로 설정됨
       }
     });
 
-    // 스킬 이벤트 처리
-    eventBus.on('battle:skill', (data: any) => {
-      console.log('스킬 이벤트 수신:', data);
+    // 스킬 이벤트 처리 (수동 타겟팅용)
+    eventBus.on('battle:skill', (data: GameEvents['battle:skill']) => {
       if (this.currentActor && data.skill && data.targets) {
         this.controller.executeSkill(data.skill, this.currentActor, data.targets);
-        // processingTurn은 turn-end 이벤트에서 300ms 딜레이 후 false로 설정됨
       }
     });
 
     // 턴 시작 이벤트 전달
-    eventBus.on('battle:turn-start', (data: any) => {
+    eventBus.on('battle:turn-start', (data: GameEvents['battle:turn-start']) => {
       if (data.actor) {
         this.currentActor = data.actor;
       }
     });
 
     // 타겟팅 시작 이벤트 처리
-    eventBus.on('battle:start-targeting', (data: any) => {
-      console.log('타겟팅 시작 이벤트 수신:', data);
+    eventBus.on('battle:start-targeting', (data: GameEvents['battle:start-targeting']) => {
       if (this.currentActor && data.skill) {
         this.startTargetingMode(data.skill);
       }
     });
 
     // 타겟팅 완료 이벤트 처리
-    eventBus.on('battle:targeting-complete', (data: any) => {
-      console.log('타겟팅 완료 이벤트 수신:', data);
+    eventBus.on('battle:targeting-complete', (data: GameEvents['battle:targeting-complete']) => {
       if (this.currentActor && data.skill && data.targets) {
         this.controller.executeSkill(data.skill, this.currentActor, data.targets);
       }
@@ -125,7 +124,6 @@ export class BattleEventManager {
 
     // 타겟팅 취소 이벤트 처리
     eventBus.on('battle:targeting-cancel', () => {
-      console.log('타겟팅 취소 이벤트 수신');
       this.uiManager.cancelTargeting();
     });
   }
@@ -243,11 +241,11 @@ export class BattleEventManager {
    * 타겟팅 모드를 시작합니다
    * @param skill 사용할 스킬
    */
-  private startTargetingMode(skill: any): void {
+  private startTargetingMode(skill: Skill): void {
     if (!this.currentActor) return;
 
     // 타겟팅 모드 시작
-    this.uiManager.startTargetingMode(skill, [this.currentActor], this.enemies, this.currentActor);
+    this.uiManager.startTargetingMode(skill, this.heroes, this.enemies, this.currentActor);
 
     // 타겟팅 UI 업데이트
     this.uiManager.updateTargetingUI();

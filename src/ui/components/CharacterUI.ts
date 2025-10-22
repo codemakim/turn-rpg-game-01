@@ -34,6 +34,9 @@ export class CharacterUI {
     this.isHero = config.isHero;
     this.position = { x: config.x, y: config.y };
 
+    // 캐릭터의 포지션을 UI 위치와 동기화
+    this.character.setPosition(config.x, config.y);
+
     // 메인 컨테이너 생성
     this.container = this.scene.add.container(config.x, config.y);
 

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { TargetingUI } from './TargetingUI';
+import { TargetingUI } from '@/ui/components/TargetingUI';
 import { Character } from '@/characters/Character';
 
 describe('TargetingUI', () => {
@@ -97,7 +97,7 @@ describe('TargetingUI', () => {
       targetingUI.showMultipleTargetingArrows(hero, [enemy, enemy2]);
 
       const arrows = targetingUI.getAllArrows();
-      arrows.forEach(arrow => {
+      arrows.forEach((arrow: any) => {
         expect(arrow.color).toBe(0xff4444);
       });
     });

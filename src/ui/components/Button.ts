@@ -118,6 +118,13 @@ export class Button {
   }
 
   /**
+   * 텍스트 객체 반환 (외부 접근용)
+   */
+  public getTextObject(): Phaser.GameObjects.Text {
+    return this.textObject;
+  }
+
+  /**
    * 버튼 색상 변경
    */
   public setColor(color: string, backgroundColor?: string): void {

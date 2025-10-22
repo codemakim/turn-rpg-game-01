@@ -1,41 +1,10 @@
+import type { GameEvents } from '@/types';
+
 /**
  * 게임 전역 이벤트 버스
  * UI와 로직 간의 느슨한 결합을 위한 이벤트 시스템
  */
-export type EventCallback<T = any> = (data: T) => void;
-
-/**
- * 이벤트 타입 정의
- */
-export interface GameEvents {
-  // 전투 이벤트
-  'battle:turn-start': { actor: any };
-  'battle:turn-end': { actor: any };
-  'battle:damage': { target: any; damage: number; isCritical: boolean };
-  'battle:heal': { target: any; amount: number };
-  'battle:attack': { attacker: any; target: any; damage: number };
-  'battle:skill': { caster: any; skill: any; targets: any[] };
-  'battle:start-targeting': { caster: any; skill: any };
-  'battle:targeting-complete': { caster: any; skill: any; targets: any[] };
-  'battle:targeting-cancel': {};
-
-  // UI 이벤트
-  'ui:button-click': { buttonId: string; data?: any };
-  'ui:button-hover': { buttonId: string };
-  'ui:button-out': { buttonId: string };
-  'ui:character-select': { character: any };
-
-  // 애니메이션 이벤트
-  'animation:damage': { target: any; damage: number; isCritical: boolean };
-  'animation:heal': { target: any; amount: number };
-  'animation:shake': { target: any };
-
-  // 게임 상태 이벤트
-  'game:start': {};
-  'game:over': { isVictory: boolean };
-  'game:pause': {};
-  'game:resume': {};
-}
+export type EventCallback<T = unknown> = (data: T) => void;
 
 /**
  * 전역 이벤트 버스 클래스
@@ -83,7 +52,7 @@ export class EventBus {
     if (!this.listeners.has(event)) {
       this.listeners.set(event, []);
     }
-    this.listeners.get(event)!.push(callback);
+    this.listeners.get(event)!.push(callback as EventCallback);
   }
 
   /**
@@ -94,7 +63,7 @@ export class EventBus {
   public off<K extends keyof GameEvents>(event: K, callback: EventCallback<GameEvents[K]>): void {
     const callbacks = this.listeners.get(event);
     if (callbacks) {
-      const index = callbacks.indexOf(callback);
+      const index = callbacks.indexOf(callback as EventCallback);
       if (index > -1) {
         callbacks.splice(index, 1);
       }

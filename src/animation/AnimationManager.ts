@@ -19,12 +19,12 @@ export class AnimationManager {
   private setupEventListeners(): void {
     // 데미지 애니메이션 이벤트
     eventBus.on('animation:damage', (data) => {
-      this.showDamageAnimation(data.target, data.damage, data.isCritical);
+      this.showDamageAnimation(data.target.position, data.damage, data.isCritical);
     });
 
     // 회복 애니메이션 이벤트
     eventBus.on('animation:heal', (data) => {
-      this.showHealAnimation(data.target, data.amount);
+      this.showHealAnimation(data.target.position, data.amount);
     });
 
     // 캐릭터 흔들림 애니메이션 이벤트

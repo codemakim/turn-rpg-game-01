@@ -61,6 +61,102 @@ export class BattleController {
   }
 
   /**
+   * 스킬 사용을 처리합니다 (타겟팅 포함)
+   * @param caster 스킬 사용자
+   * @param skill 사용할 스킬
+   * @returns 타겟팅이 필요한지 여부
+   */
+  public handleSkillUse(caster: Character, skill: Skill): boolean {
+    // 타겟팅이 필요한지 확인
+    if (this.requiresTargeting(skill)) {
+      return true; // 타겟팅 필요
+    }
+
+    // 자동 타겟팅
+    const autoTargets = this.getAutoTargets(caster, skill);
+    if (autoTargets.length > 0) {
+      this.executeSkill(skill, caster, autoTargets);
+    }
+
+    return false; // 타겟팅 불필요
+  }
+
+  /**
+   * 타겟팅 완료 후 스킬 실행
+   * @param caster 스킬 사용자
+   * @param skill 사용할 스킬
+   * @param targets 선택된 대상들
+   */
+  public executeTargetedSkill(caster: Character, skill: Skill, targets: Character[]): void {
+    this.executeSkill(skill, caster, targets);
+  }
+
+  /**
+   * 스킬이 타겟팅을 필요로 하는지 확인
+   * @param skill 스킬 객체
+   * @returns 타겟팅 필요 여부
+   */
+  private requiresTargeting(skill: Skill): boolean {
+    // 전체 대상 스킬은 타겟팅 불필요
+    if (skill.targetType === 'all-enemies' || skill.targetType === 'all-allies' || skill.targetType === 'self') {
+      return false;
+    }
+
+    // 단일 대상 스킬인 경우 유효한 대상 수 확인
+    if (skill.targetType === 'single-enemy' || skill.targetType === 'single-ally') {
+      const validTargets = this.getValidTargetsForSkill(skill);
+      return validTargets.length > 1; // 대상이 여러 명이면 타겟팅 필요
+    }
+
+    return false;
+  }
+
+  /**
+   * 자동 타겟팅 대상들을 반환
+   * @param caster 스킬 사용자
+   * @param skill 스킬 객체
+   * @returns 자동 타겟팅 대상들
+   */
+  private getAutoTargets(caster: Character, skill: Skill): Character[] {
+    switch (skill.targetType) {
+      case 'self':
+        return [caster];
+      case 'single-enemy':
+        const aliveEnemies = this.enemies.filter(enemy => enemy.isAlive());
+        return aliveEnemies.length > 0 ? [aliveEnemies[0]] : [];
+      case 'all-enemies':
+        return this.enemies.filter(enemy => enemy.isAlive());
+      case 'single-ally':
+        const aliveHeroes = this.heroes.filter(hero => hero.isAlive());
+        return aliveHeroes.length > 0 ? [aliveHeroes[0]] : [];
+      case 'all-allies':
+        return this.heroes.filter(hero => hero.isAlive());
+      default:
+        return [];
+    }
+  }
+
+  /**
+   * 스킬에 대한 유효한 대상을 반환
+   * @param skill 스킬 객체
+   * @returns 유효한 대상 배열
+   */
+  private getValidTargetsForSkill(skill: Skill): Character[] {
+    switch (skill.targetType) {
+      case 'single-enemy':
+      case 'all-enemies':
+        return this.enemies.filter(enemy => enemy.isAlive());
+      case 'single-ally':
+      case 'all-allies':
+        return this.heroes.filter(hero => hero.isAlive());
+      case 'self':
+        return this.heroes.filter(hero => hero.isAlive());
+      default:
+        return [];
+    }
+  }
+
+  /**
    * 전투 이벤트를 발생시킵니다
    * @param event 전투 이벤트
    */

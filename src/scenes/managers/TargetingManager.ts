@@ -4,6 +4,7 @@ import { Skill } from '@/battle/Skill';
 import { TargetingSystem } from '@/battle/TargetingSystem';
 import { TargetingUI } from '@/ui/components/TargetingUI';
 import { eventBus } from '@/core/EventBus';
+import type { MouseEventData, TouchEventData } from '@/types';
 
 /**
  * 타겟팅 결과
@@ -41,9 +42,11 @@ export class TargetingManager {
    */
   public startTargetingMode(skill: Skill, heroes: Character[], enemies: Character[], caster: Character): TargetingResult {
     try {
+      console.log('🎯 타겟팅 모드 시작');
       this.targetingSystem.startTargeting(skill, heroes, enemies, caster);
       this.targetingMode = true;
       this.setupInputListeners();
+      console.log('✅ 타겟팅 모드 활성화됨');
 
       return {
         success: true,
@@ -128,7 +131,8 @@ export class TargetingManager {
     const skill = this.targetingSystem.getCurrentSkill();
 
     if (caster && skill && selectedTargets.length > 0) {
-      // 타겟팅 완료 이벤트 발생
+      // BattleController를 통해 직접 스킬 실행
+      // TODO: BattleController 참조 추가 필요
       eventBus.emit('battle:targeting-complete', {
         caster: caster,
         skill: skill,
@@ -148,18 +152,23 @@ export class TargetingManager {
    * @param event 마우스 이벤트
    * @returns 처리 결과
    */
-  public handleMouseClick(event: any): TargetingResult {
+  public handleMouseClick(event: MouseEventData): TargetingResult {
+    // 타겟팅 모드가 아니면 처리하지 않음
     if (!this.targetingMode) {
       return { success: false, message: '타겟팅 모드가 아닙니다.' };
     }
 
-    // 클릭된 위치에서 캐릭터 찾기 (실제 구현에서는 더 정교한 로직 필요)
+    console.log(`타겟팅 클릭: (${event.x}, ${event.y})`);
+
+    // 클릭된 위치에서 캐릭터 찾기
     const clickedCharacter = this.findCharacterAtPosition(event.x, event.y);
 
     if (clickedCharacter) {
+      console.log('캐릭터 선택됨:', clickedCharacter.name);
       return this.selectTarget(clickedCharacter);
     }
 
+    console.log('선택된 캐릭터 없음');
     return { success: false, message: '유효한 대상을 찾을 수 없습니다.' };
   }
 
@@ -168,7 +177,7 @@ export class TargetingManager {
    * @param event 터치 이벤트
    * @returns 처리 결과
    */
-  public handleTouch(event: any): TargetingResult {
+  public handleTouch(event: TouchEventData): TargetingResult {
     return this.handleMouseClick(event);
   }
 
@@ -250,7 +259,11 @@ export class TargetingManager {
   private setupInputListeners(): void {
     // 마우스 클릭 리스너
     const mouseClickCallback = (pointer: Phaser.Input.Pointer) => {
-      this.handleMouseClick(pointer);
+      // 타겟팅 모드일 때만 처리
+      if (this.targetingMode) {
+        console.log('타겟팅 모드에서 클릭 처리');
+        this.handleMouseClick({ x: pointer.x, y: pointer.y });
+      }
     };
 
     this.scene.input.on('pointerdown', mouseClickCallback);
@@ -283,18 +296,23 @@ export class TargetingManager {
    */
   private findCharacterAtPosition(x: number, y: number): Character | null {
     const validTargets = this.getValidTargets();
+    console.log(`클릭: (${x}, ${y}), 대상: ${validTargets.length}명`);
 
-    // 간단한 거리 기반 검색 (실제 구현에서는 더 정교한 로직 필요)
+    // 간단한 거리 기반 검색
     for (const target of validTargets) {
       const distance = Math.sqrt(
         Math.pow(x - target.position.x, 2) + Math.pow(y - target.position.y, 2)
       );
 
-      if (distance < 50) { // 50픽셀 반경 내
+      console.log(`${target.name}: 위치(${target.position.x}, ${target.position.y}), 거리: ${distance.toFixed(1)}`);
+
+      if (distance < 100) { // 100픽셀 반경 내로 되돌림
+        console.log(`✅ ${target.name} 선택됨!`);
         return target;
       }
     }
 
+    console.log('선택된 캐릭터 없음');
     return null;
   }
 

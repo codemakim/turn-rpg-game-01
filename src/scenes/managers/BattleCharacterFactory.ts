@@ -1,5 +1,6 @@
 import { Character } from '@/characters/Character';
 import { Skill } from '@/battle/Skill';
+import { SkillRegistry } from '@/data/SkillRegistry';
 
 /**
  * 전투용 캐릭터 및 스킬 생성 팩토리
@@ -31,14 +32,7 @@ export class BattleCharacterFactory {
         defense: 8,
         speed: 15,
         skills: [
-          new Skill({
-            id: 'fireball',
-            name: '파이어볼',
-            description: '화염 구체 공격',
-            mpCost: 20,
-            targetType: 'single-enemy',
-            effects: [{ type: 'damage', value: 200 }], // 200% 공격력
-          }),
+          SkillRegistry.getSkill('fireball')!,
         ],
       }),
     ];
@@ -69,14 +63,7 @@ export class BattleCharacterFactory {
         defense: 6,
         speed: 16,
         skills: [
-          new Skill({
-            id: 'goblin-attack',
-            name: '고블린 슬래시',
-            description: '빠른 베기 공격',
-            mpCost: 8,
-            targetType: 'single-enemy',
-            effects: [{ type: 'damage', value: 150 }], // 150% 공격력
-          }),
+          SkillRegistry.getSkill('goblin-attack')!,
         ],
       }),
     ];
@@ -88,22 +75,8 @@ export class BattleCharacterFactory {
    */
   private createHeroSkills(): Skill[] {
     return [
-      new Skill({
-        id: 'strong-attack',
-        name: '강타',
-        description: '강력한 공격',
-        mpCost: 10,
-        targetType: 'single-enemy',
-        effects: [{ type: 'damage', value: 180 }], // 180% 공격력
-      }),
-      new Skill({
-        id: 'heal',
-        name: '힐',
-        description: '체력 회복',
-        mpCost: 15,
-        targetType: 'self',
-        effects: [{ type: 'heal', value: 30 }],
-      }),
+      SkillRegistry.getSkill('strong-attack')!,
+      SkillRegistry.getSkill('heal')!,
     ];
   }
 
@@ -113,14 +86,7 @@ export class BattleCharacterFactory {
    */
   private createEnemySkills(): Skill[] {
     return [
-      new Skill({
-        id: 'slime-attack',
-        name: '슬라임 독침',
-        description: '독이 묻은 공격',
-        mpCost: 10,
-        targetType: 'single-enemy',
-        effects: [{ type: 'damage', value: 160 }], // 160% 공격력
-      }),
+      SkillRegistry.getSkill('slime-attack')!,
     ];
   }
 }

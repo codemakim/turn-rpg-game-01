@@ -43,7 +43,6 @@ export class ButtonGroup {
    */
   public createAttackButton(): void {
     const buttonWidth = this.config.buttonWidth!;
-    const buttonSpacing = this.config.buttonSpacing!;
 
     // 공격 버튼을 컨테이너 내 첫 번째 위치에 배치
     this.attackButton = new Button(this.scene, {
@@ -53,7 +52,7 @@ export class ButtonGroup {
       buttonId: 'attack',
     });
 
-    this.container.add(this.attackButton.textObject);
+    this.container.add(this.attackButton.getTextObject());
     this.attackButton.disable();
   }
 
@@ -87,7 +86,7 @@ export class ButtonGroup {
       }
 
       this.skillButtons.push(button);
-      this.container.add(button.textObject);
+      this.container.add(button.getTextObject());
     });
   }
 

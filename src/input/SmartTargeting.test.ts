@@ -18,7 +18,6 @@ describe('Smart Targeting Logic', () => {
     enemy2 = new Character({ name: '슬라임2', hp: 50, attack: 10, defense: 5, speed: 8 });
     enemy3 = new Character({ name: '슬라임3', hp: 50, attack: 10, defense: 5, speed: 8 });
 
-    inputHandler.setCharacters([hero], [enemy1, enemy2, enemy3]);
   });
 
   describe('전체 대상 스킬', () => {
@@ -101,9 +100,6 @@ describe('Smart Targeting Logic', () => {
     });
 
     it('아군이 여러 명일 때 단일 아군 대상 스킬은 타겟팅이 필요해야 한다', () => {
-      const hero2 = new Character({ name: '마법사', hp: 80, attack: 15, defense: 8, speed: 12 });
-      inputHandler.setCharacters([hero, hero2], [enemy1, enemy2, enemy3]);
-
       const singleAllySkill = new Skill({
         id: 'heal',
         name: '힐',

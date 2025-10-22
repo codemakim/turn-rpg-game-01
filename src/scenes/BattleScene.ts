@@ -35,12 +35,14 @@ export class BattleScene extends Phaser.Scene {
     this.uiManager.createBackground();
     this.createCharacters();
     this.controller = new BattleController(this.heroes, this.enemies);
+    this.inputHandler.setController(this.controller);
     this.eventManager = new BattleEventManager(
       this,
       this.controller,
       this.inputHandler,
       this.uiManager,
       this.animationManager,
+      this.heroes,
       this.enemies
     );
     this.createUI();
@@ -66,7 +68,6 @@ export class BattleScene extends Phaser.Scene {
   private createCharacters(): void {
     this.heroes = this.characterFactory.createHeroes();
     this.enemies = this.characterFactory.createEnemies();
-    this.inputHandler.setCharacters(this.heroes, this.enemies);
   }
 
   private createUI(): void {

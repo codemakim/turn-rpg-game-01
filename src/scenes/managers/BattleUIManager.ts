@@ -4,6 +4,8 @@ import { CharacterUIManager } from '@/ui/managers/CharacterUIManager';
 import { ButtonUIManager } from '@/ui/managers/ButtonUIManager';
 import { TargetingManager } from './TargetingManager';
 import { type LayoutInfo } from './BattleLayoutManager';
+import type { TargetingResult } from '@/types';
+import { Skill } from '@/battle/Skill';
 
 /**
  * 전투 UI 관리자
@@ -158,7 +160,7 @@ export class BattleUIManager {
    * @param enemies 적군 캐릭터들
    * @param caster 스킬 사용자
    */
-  public startTargetingMode(skill: any, heroes: Character[], enemies: Character[], caster: Character): void {
+  public startTargetingMode(skill: Skill, heroes: Character[], enemies: Character[], caster: Character): void {
     this.targetingManager.startTargetingMode(skill, heroes, enemies, caster);
   }
 
@@ -172,7 +174,7 @@ export class BattleUIManager {
   /**
    * 타겟팅을 완료합니다
    */
-  public completeTargeting(): any {
+  public completeTargeting(): TargetingResult {
     return this.targetingManager.completeTargeting();
   }
 
@@ -187,7 +189,7 @@ export class BattleUIManager {
    * 캐릭터 클릭 이벤트를 처리합니다
    * @param character 클릭된 캐릭터
    */
-  public handleCharacterClick(character: Character): any {
+  public handleCharacterClick(character: Character): TargetingResult {
     if (this.isTargetingMode()) {
       return this.targetingManager.selectTarget(character);
     }
@@ -199,7 +201,7 @@ export class BattleUIManager {
    * @param x X 좌표
    * @param y Y 좌표
    */
-  public handleMouseClick(x: number, y: number): any {
+  public handleMouseClick(x: number, y: number): TargetingResult {
     if (this.isTargetingMode()) {
       return this.targetingManager.handleMouseClick({ x, y });
     }
@@ -210,7 +212,7 @@ export class BattleUIManager {
    * 키 입력을 처리합니다
    * @param keyCode 키 코드
    */
-  public handleKeyPress(keyCode: string): any {
+  public handleKeyPress(keyCode: string): TargetingResult {
     if (this.isTargetingMode()) {
       return this.targetingManager.handleKeyPress(keyCode);
     }
