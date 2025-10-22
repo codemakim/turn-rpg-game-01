@@ -34,7 +34,7 @@ export interface DamageResult {
  * @returns 계산된 데미지와 크리티컬 여부
  */
 export function calculateDamage(params: DamageParams): DamageResult {
-  const skillPower = params.skillPower ?? 1.0;
+  const skillPower = params.skillPower ?? 100; // 기본값 100 (100%)
 
   // 크리티컬 판정
   let isCritical = params.isCritical ?? false;
@@ -42,12 +42,12 @@ export function calculateDamage(params: DamageParams): DamageResult {
     isCritical = Math.random() < params.criticalRate;
   }
 
-  // 기본 데미지 계산: (공격력 * 스킬배율) - 방어력
-  let damage = (params.attack * skillPower) - params.defense;
+  // 기본 데미지 계산: (공격력 * 스킬배율 / 100) - 방어력
+  let damage = Math.floor((params.attack * skillPower) / 100) - params.defense;
 
-  // 크리티컬이면 1.5배
+  // 크리티컬이면 150% (1.5배)
   if (isCritical) {
-    damage *= 1.5;
+    damage = Math.floor((damage * 150) / 100);
   }
 
   // 최소 데미지 1 보장

@@ -207,6 +207,9 @@ export class CharacterUI {
   public setPosition(position: { x: number; y: number }): void {
     // 컨테이너만 이동하면 모든 하위 요소들이 함께 이동됨
     this.container.setPosition(position.x, position.y);
+
+    // Character의 위치도 동기화
+    this.character.setPosition(position.x, position.y);
   }
 
   /**

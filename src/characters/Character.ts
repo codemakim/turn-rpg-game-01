@@ -47,6 +47,8 @@ export class Character {
   public speed: number;
   /** 보유 스킬 목록 */
   public skills: Skill[];
+  /** 캐릭터 위치 */
+  public position: { x: number; y: number };
 
   /**
    * 캐릭터를 생성합니다
@@ -62,6 +64,7 @@ export class Character {
     this.defense = stats.defense;
     this.speed = stats.speed ?? 10;
     this.skills = stats.skills ?? [];
+    this.position = { x: 0, y: 0 };
   }
 
   /**
@@ -88,6 +91,48 @@ export class Character {
    */
   isAlive(): boolean {
     return this.hp > 0;
+  }
+
+  /**
+   * 캐릭터의 위치를 설정합니다
+   * @param x X 좌표 또는 위치 객체
+   * @param y Y 좌표 (x가 숫자일 때만 사용)
+   */
+  setPosition(x: number | { x: number; y: number }, y?: number): void {
+    if (typeof x === 'number' && typeof y === 'number') {
+      this.position.x = x;
+      this.position.y = y;
+    } else if (typeof x === 'object') {
+      this.position.x = x.x;
+      this.position.y = x.y;
+    }
+  }
+
+  /**
+   * 현재 위치를 반환합니다
+   * @returns 현재 위치 객체
+   */
+  getPosition(): { x: number; y: number } {
+    return { ...this.position };
+  }
+
+  /**
+   * 위치를 초기화합니다 (0, 0)
+   */
+  resetPosition(): void {
+    this.position.x = 0;
+    this.position.y = 0;
+  }
+
+  /**
+   * 다른 캐릭터와의 거리를 계산합니다
+   * @param other 다른 캐릭터
+   * @returns 거리
+   */
+  getDistanceTo(other: Character): number {
+    const dx = this.position.x - other.position.x;
+    const dy = this.position.y - other.position.y;
+    return Math.sqrt(dx * dx + dy * dy);
   }
 }
 

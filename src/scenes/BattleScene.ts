@@ -124,6 +124,7 @@ export class BattleScene extends Phaser.Scene {
 
     const layout = this.calculateLayout();
     this.uiManager.rearrangeLayout(layout);
+    this.uiManager.onResize();
   }
 
   destroy(): void {

@@ -17,10 +17,10 @@ describe('DamageCalculator', () => {
       const result = calculateDamage({
         attack: 50,
         defense: 10,
-        skillPower: 2.0, // 2배 데미지
+        skillPower: 200, // 200% 데미지
       });
 
-      // (50 * 2.0) - 10 = 90
+      // (50 * 200 / 100) - 10 = 90
       expect(result.damage).toBe(90);
     });
 
@@ -88,11 +88,11 @@ describe('DamageCalculator', () => {
       const result = calculateDamage({
         attack: 50,
         defense: 10,
-        skillPower: 2.0,
+        skillPower: 200, // 200% 데미지
         isCritical: true,
       });
 
-      // ((50 * 2.0) - 10) * 1.5 = 135
+      // ((50 * 200 / 100) - 10) * 150 / 100 = 135
       expect(result.damage).toBe(135);
       expect(result.isCritical).toBe(true);
     });

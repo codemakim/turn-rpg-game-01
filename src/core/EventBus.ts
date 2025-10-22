@@ -15,6 +15,9 @@ export interface GameEvents {
   'battle:heal': { target: any; amount: number };
   'battle:attack': { attacker: any; target: any; damage: number };
   'battle:skill': { caster: any; skill: any; targets: any[] };
+  'battle:start-targeting': { caster: any; skill: any };
+  'battle:targeting-complete': { caster: any; skill: any; targets: any[] };
+  'battle:targeting-cancel': {};
 
   // UI 이벤트
   'ui:button-click': { buttonId: string; data?: any };

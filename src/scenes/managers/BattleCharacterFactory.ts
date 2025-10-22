@@ -37,7 +37,7 @@ export class BattleCharacterFactory {
             description: '화염 구체 공격',
             mpCost: 20,
             targetType: 'single-enemy',
-            effects: [{ type: 'damage', value: 45 }],
+            effects: [{ type: 'damage', value: 200 }], // 200% 공격력
           }),
         ],
       }),
@@ -75,7 +75,7 @@ export class BattleCharacterFactory {
             description: '빠른 베기 공격',
             mpCost: 8,
             targetType: 'single-enemy',
-            effects: [{ type: 'damage', value: 30 }],
+            effects: [{ type: 'damage', value: 150 }], // 150% 공격력
           }),
         ],
       }),
@@ -94,7 +94,7 @@ export class BattleCharacterFactory {
         description: '강력한 공격',
         mpCost: 10,
         targetType: 'single-enemy',
-        effects: [{ type: 'damage', value: 50 }],
+        effects: [{ type: 'damage', value: 180 }], // 180% 공격력
       }),
       new Skill({
         id: 'heal',
@@ -119,7 +119,7 @@ export class BattleCharacterFactory {
         description: '독이 묻은 공격',
         mpCost: 10,
         targetType: 'single-enemy',
-        effects: [{ type: 'damage', value: 35 }],
+        effects: [{ type: 'damage', value: 160 }], // 160% 공격력
       }),
     ];
   }

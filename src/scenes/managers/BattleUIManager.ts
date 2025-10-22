@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { Character } from '@/characters/Character';
 import { CharacterUIManager } from '@/ui/managers/CharacterUIManager';
 import { ButtonUIManager } from '@/ui/managers/ButtonUIManager';
+import { TargetingManager } from './TargetingManager';
 import { type LayoutInfo } from './BattleLayoutManager';
 
 /**
@@ -12,11 +13,13 @@ export class BattleUIManager {
   private scene: Phaser.Scene;
   private characterUIManager: CharacterUIManager;
   private buttonUIManager: ButtonUIManager;
+  private targetingManager: TargetingManager;
 
   constructor(scene: Phaser.Scene) {
     this.scene = scene;
     this.characterUIManager = new CharacterUIManager(scene);
     this.buttonUIManager = new ButtonUIManager(scene);
+    this.targetingManager = new TargetingManager(scene);
   }
 
   /**
@@ -149,11 +152,92 @@ export class BattleUIManager {
 
 
   /**
+   * 타겟팅 모드를 시작합니다
+   * @param skill 사용할 스킬
+   * @param heroes 아군 캐릭터들
+   * @param enemies 적군 캐릭터들
+   * @param caster 스킬 사용자
+   */
+  public startTargetingMode(skill: any, heroes: Character[], enemies: Character[], caster: Character): void {
+    this.targetingManager.startTargetingMode(skill, heroes, enemies, caster);
+  }
+
+  /**
+   * 타겟팅을 취소합니다
+   */
+  public cancelTargeting(): void {
+    this.targetingManager.cancelTargeting();
+  }
+
+  /**
+   * 타겟팅을 완료합니다
+   */
+  public completeTargeting(): any {
+    return this.targetingManager.completeTargeting();
+  }
+
+  /**
+   * 타겟팅 모드인지 확인합니다
+   */
+  public isTargetingMode(): boolean {
+    return this.targetingManager.isTargetingMode();
+  }
+
+  /**
+   * 캐릭터 클릭 이벤트를 처리합니다
+   * @param character 클릭된 캐릭터
+   */
+  public handleCharacterClick(character: Character): any {
+    if (this.isTargetingMode()) {
+      return this.targetingManager.selectTarget(character);
+    }
+    return { success: false, message: '타겟팅 모드가 아닙니다.' };
+  }
+
+  /**
+   * 마우스 클릭 이벤트를 처리합니다
+   * @param x X 좌표
+   * @param y Y 좌표
+   */
+  public handleMouseClick(x: number, y: number): any {
+    if (this.isTargetingMode()) {
+      return this.targetingManager.handleMouseClick({ x, y });
+    }
+    return { success: false, message: '타겟팅 모드가 아닙니다.' };
+  }
+
+  /**
+   * 키 입력을 처리합니다
+   * @param keyCode 키 코드
+   */
+  public handleKeyPress(keyCode: string): any {
+    if (this.isTargetingMode()) {
+      return this.targetingManager.handleKeyPress(keyCode);
+    }
+    return { success: false, message: '타겟팅 모드가 아닙니다.' };
+  }
+
+  /**
+   * 타겟팅 UI를 업데이트합니다
+   */
+  public updateTargetingUI(): void {
+    this.targetingManager.updateTargetingUI();
+  }
+
+  /**
+   * 화면 크기 변경 시 호출됩니다
+   */
+  public onResize(): void {
+    this.targetingManager.onResize();
+  }
+
+  /**
    * UI 관리자 파괴
    */
   public destroy(): void {
     // 모든 UI 관리자 파괴
     this.characterUIManager.destroy();
     this.buttonUIManager.destroy();
+    this.targetingManager.destroy();
   }
 }

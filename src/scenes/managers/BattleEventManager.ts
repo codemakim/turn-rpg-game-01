@@ -106,6 +106,28 @@ export class BattleEventManager {
         this.currentActor = data.actor;
       }
     });
+
+    // 타겟팅 시작 이벤트 처리
+    eventBus.on('battle:start-targeting', (data: any) => {
+      console.log('타겟팅 시작 이벤트 수신:', data);
+      if (this.currentActor && data.skill) {
+        this.startTargetingMode(data.skill);
+      }
+    });
+
+    // 타겟팅 완료 이벤트 처리
+    eventBus.on('battle:targeting-complete', (data: any) => {
+      console.log('타겟팅 완료 이벤트 수신:', data);
+      if (this.currentActor && data.skill && data.targets) {
+        this.controller.executeSkill(data.skill, this.currentActor, data.targets);
+      }
+    });
+
+    // 타겟팅 취소 이벤트 처리
+    eventBus.on('battle:targeting-cancel', () => {
+      console.log('타겟팅 취소 이벤트 수신');
+      this.uiManager.cancelTargeting();
+    });
   }
 
   /**
@@ -215,6 +237,20 @@ export class BattleEventManager {
    */
   public isBattleEnded(): boolean {
     return this.battleEnded;
+  }
+
+  /**
+   * 타겟팅 모드를 시작합니다
+   * @param skill 사용할 스킬
+   */
+  private startTargetingMode(skill: any): void {
+    if (!this.currentActor) return;
+
+    // 타겟팅 모드 시작
+    this.uiManager.startTargetingMode(skill, [this.currentActor], this.enemies, this.currentActor);
+
+    // 타겟팅 UI 업데이트
+    this.uiManager.updateTargetingUI();
   }
 
   /**

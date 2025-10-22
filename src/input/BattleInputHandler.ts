@@ -1,4 +1,5 @@
 import { eventBus } from '@/core/EventBus';
+import { Skill } from '@/battle/Skill';
 
 /**
  * 전투 입력 처리 핸들러 (입력 처리만 담당)
@@ -20,7 +21,7 @@ export class BattleInputHandler {
     // UI 버튼 클릭 이벤트 처리
     eventBus.on('ui:button-click', (data) => {
       console.log('버튼 클릭 이벤트 수신:', data);
-      this.handleButtonClick(data.buttonId, data.data);
+      this.handleButtonClick(data.buttonId);
     });
 
     // 턴 종료 이벤트에서 현재 액터 초기화
@@ -41,9 +42,8 @@ export class BattleInputHandler {
   /**
    * 버튼 클릭 처리
    * @param buttonId 버튼 ID
-   * @param data 추가 데이터
    */
-  private handleButtonClick(buttonId: string, data?: any): void {
+  private handleButtonClick(buttonId: string): void {
     if (!this.currentActor) {
       return;
     }
@@ -73,20 +73,31 @@ export class BattleInputHandler {
   }
 
   /**
-   * 공격 처리
+   * 공격 처리 (스킬 시스템으로 통일)
    */
   private handleAttack(): void {
     if (!this.currentActor) return;
 
-    // 현재는 첫 번째 살아있는 적을 공격 (향후 타겟 선택 UI 추가 예정)
-    const aliveEnemies = this.enemies.filter(enemy => enemy.isAlive());
-    if (aliveEnemies.length > 0) {
-      eventBus.emit('battle:attack', {
-        attacker: this.currentActor,
-        target: aliveEnemies[0],
-        damage: 0, // DamageCalculator에서 계산됨
-      });
-    }
+    // 기본 공격 스킬 생성
+    const attackSkill = this.createBasicAttackSkill();
+
+    // 스킬 시스템을 통해 처리
+    this.handleSkill(attackSkill.id);
+  }
+
+  /**
+   * 기본 공격 스킬을 생성합니다
+   * @returns 기본 공격 스킬
+   */
+  private createBasicAttackSkill(): Skill {
+    return new Skill({
+      id: 'basic-attack',
+      name: '공격',
+      description: '기본 공격',
+      mpCost: 0,
+      targetType: 'single-enemy',
+      effects: [{ type: 'damage', value: 100 }] // 100% 공격력 데미지
+    });
   }
 
   /**
@@ -96,35 +107,97 @@ export class BattleInputHandler {
   private handleSkill(skillId: string): void {
     if (!this.currentActor) return;
 
-    // 현재 캐릭터의 스킬 찾기
-    const skill = this.currentActor.skills.find((s: any) => s.id === skillId);
-    if (!skill) {
-      console.warn('스킬을 찾을 수 없음:', skillId);
-      return;
-    }
-
-    // 스킬 타겟팅에 따라 대상 결정
-    let targets: any[] = [];
-
-    if (skill.targetType === 'self') {
-      targets = [this.currentActor];
-    } else if (skill.targetType === 'single-enemy') {
-      const aliveEnemies = this.enemies.filter(enemy => enemy.isAlive());
-      if (aliveEnemies.length > 0) {
-        targets = [aliveEnemies[0]];
+    // 베이직 어택 스킬은 동적으로 생성
+    let skill: any;
+    if (skillId === 'basic-attack') {
+      skill = this.createBasicAttackSkill();
+    } else {
+      // 현재 캐릭터의 스킬 찾기
+      skill = this.currentActor.skills.find((s: any) => s.id === skillId);
+      if (!skill) {
+        console.warn('스킬을 찾을 수 없음:', skillId);
+        return;
       }
-    } else if (skill.targetType === 'all-enemies') {
-      targets = this.enemies.filter(enemy => enemy.isAlive());
-    } else if (skill.targetType === 'all-allies') {
-      targets = this.heroes.filter(hero => hero.isAlive());
     }
 
-    if (targets.length > 0) {
-      eventBus.emit('battle:skill', {
+    // 타겟팅이 필요한 스킬인지 확인
+    if (this.requiresTargeting(skill)) {
+      // 타겟팅 모드 시작
+      eventBus.emit('battle:start-targeting', {
         caster: this.currentActor,
         skill: skill,
-        targets: targets,
       });
+    } else {
+      // 자동 타겟팅 (기존 로직)
+      let targets: any[] = [];
+
+      if (skill.targetType === 'self') {
+        targets = [this.currentActor];
+      } else if (skill.targetType === 'single-enemy') {
+        const aliveEnemies = this.enemies.filter(enemy => enemy.isAlive());
+        if (aliveEnemies.length > 0) {
+          targets = [aliveEnemies[0]];
+        }
+      } else if (skill.targetType === 'all-enemies') {
+        targets = this.enemies.filter(enemy => enemy.isAlive());
+      } else if (skill.targetType === 'all-allies') {
+        targets = this.heroes.filter(hero => hero.isAlive());
+      }
+
+      if (targets.length > 0) {
+        eventBus.emit('battle:skill', {
+          caster: this.currentActor,
+          skill: skill,
+          targets: targets,
+        });
+      }
+    }
+  }
+
+  /**
+   * 스킬이 타겟팅을 필요로 하는지 확인
+   * @param skill 스킬 객체
+   * @returns 타겟팅 필요 여부
+   */
+  private requiresTargeting(skill: any): boolean {
+    // 전체 대상 스킬은 타겟팅 불필요
+    if (skill.targetType === 'all-enemies' || skill.targetType === 'all-allies' || skill.targetType === 'self') {
+      return false;
+    }
+
+    // 단일 대상 스킬인 경우 유효한 대상 수 확인
+    if (skill.targetType === 'single-enemy' || skill.targetType === 'single-ally') {
+      const validTargets = this.getValidTargetsForSkill(skill);
+
+      // 대상이 1명뿐이면 타겟팅 불필요 (선택권 없음)
+      if (validTargets.length <= 1) {
+        return false;
+      }
+
+      // 대상이 여러 명이면 타겟팅 필요 (선택권 있음)
+      return true;
+    }
+
+    return false;
+  }
+
+  /**
+   * 스킬에 대한 유효한 대상을 반환
+   * @param skill 스킬 객체
+   * @returns 유효한 대상 배열
+   */
+  private getValidTargetsForSkill(skill: any): any[] {
+    switch (skill.targetType) {
+      case 'single-enemy':
+      case 'all-enemies':
+        return this.enemies.filter(enemy => enemy.isAlive());
+      case 'single-ally':
+      case 'all-allies':
+        return this.heroes.filter(hero => hero.isAlive());
+      case 'self':
+        return [this.currentActor];
+      default:
+        return [];
     }
   }
 

@@ -1,4 +1,5 @@
 import { Character } from '@/characters/Character';
+import { calculateDamage } from './DamageCalculator';
 
 /**
  * 스킬의 대상 타입
@@ -111,12 +112,20 @@ export class Skill {
 
         switch (effect.type) {
           case 'damage':
-            target.takeDamage(effect.value);
+            // DamageCalculator를 사용하여 실제 데미지 계산
+            const damageResult = calculateDamage({
+              attack: user.attack,
+              defense: target.defense,
+              skillPower: effect.value, // 스킬 배율 (1.0 = 100% 공격력)
+              criticalRate: 0.1, // 10% 크리티컬 확률
+            });
+
+            target.takeDamage(damageResult.damage);
             effectResult = {
               target: target.name,
               type: 'damage',
-              value: effect.value,
-              message: `${target.name}에게 ${effect.value} 데미지!`,
+              value: damageResult.damage,
+              message: `${target.name}에게 ${damageResult.damage} 데미지!${damageResult.isCritical ? ' (크리티컬!)' : ''}`,
             };
             break;
 
